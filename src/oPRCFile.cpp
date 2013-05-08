@@ -27,7 +27,7 @@
 *
 ******************************************************************************/
 
-#include <pdal/drivers/prc/oPRCFile.hpp>
+#include <prc/oPRCFile.hpp>
 #include <time.h>
 #include <sstream>
 #include <iostream>

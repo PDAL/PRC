@@ -29,8 +29,8 @@
 #endif
 #include <map>
 #include <iostream>
-#include <pdal/drivers/prc/PRCbitStream.hpp>
-#include <pdal/drivers/prc/PRC.hpp>
+#include <prc/PRCbitStream.hpp>
+#include <prc/PRC.hpp>
 #include <float.h>
 #include <math.h>
 

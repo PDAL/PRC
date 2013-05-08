@@ -1,4 +1,4 @@
-#include <pdal/drivers/prc/PRCdouble.hpp>
+#include <prc/PRCdouble.hpp>
 
 // from Adobe's documentation
 

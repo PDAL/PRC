@@ -32,12 +32,13 @@
 * OF SUCH DAMAGE.
 ****************************************************************************/
 
-#include <pdal/drivers/prc/oPRCFile.hpp>
-#include <pdal/drivers/prc/Writer.hpp>
+#include <prc/oPRCFile.hpp>
+#include <prc/Writer.hpp>
 #include <pdal/Dimension.hpp>
 #include <pdal/Schema.hpp>
 #include <pdal/PointBuffer.hpp>
 #include <pdal/pdal_macros.hpp>
+#include <pdal/StageFactory.hpp>
 
 //#include <iostream>
 //#include <algorithm>
@@ -47,10 +48,8 @@
 //#include <boost/algorithm/string/erase.hpp>
 
 
-#ifdef USE_PDAL_PLUGIN_PRC
 MAKE_WRITER_CREATOR(prcWriter, pdal::drivers::prc::Writer)
 CREATE_WRITER_PLUGIN(prc, pdal::drivers::prc::Writer)
-#endif
 
 
 namespace pdal

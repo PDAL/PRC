@@ -24,8 +24,8 @@
 #include <string.h>
 #include <cassert>
 
-#include <pdal/drivers/prc/PRCbitStream.hpp>
-#include <pdal/drivers/prc/PRCdouble.hpp>
+#include <prc/PRCbitStream.hpp>
+#include <prc/PRCdouble.hpp>
 
 using std::string;
 using std::cerr;

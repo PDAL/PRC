@@ -19,7 +19,7 @@
 *
 *************/
 
-#include <pdal/drivers/prc/writePRC.hpp>
+#include <prc/writePRC.hpp>
 #include <climits>
 #include <cassert>
 

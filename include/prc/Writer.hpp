@@ -35,7 +35,7 @@
 #ifndef INCLUDED_DRIVERS_PRC_WRITER_HPP
 #define INCLUDED_DRIVERS_PRC_WRITER_HPP
 
-#include <pdal/drivers/prc/oPRCFile.hpp>
+#include <prc/oPRCFile.hpp>
 #include <pdal/Writer.hpp>
 #include <pdal/FileUtils.hpp>
 #include <pdal/StageFactory.hpp>

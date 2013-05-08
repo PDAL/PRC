@@ -43,9 +43,9 @@
 #include "config.h"
 #endif
 
-#include <pdal/drivers/prc/PRC.hpp>
-#include <pdal/drivers/prc/PRCbitStream.hpp>
-#include <pdal/drivers/prc/writePRC.hpp>
+#include <prc/PRC.hpp>
+#include <prc/PRCbitStream.hpp>
+#include <prc/writePRC.hpp>
 
 class oPRCFile;
 class PRCFileStructure;
