@@ -64,13 +64,13 @@ public:
     {}
 };
 
-/*
 PDAL_C_START
 
 PDAL_DLL void PDALRegister_writer_prc(void* factory);
 
 PDAL_C_END
-*/
+
+pdal::Writer* createPRCWriter(pdal::Stage& prevStage, const pdal::Options& options);
 
 class PDAL_DLL Writer : public pdal::Writer
 {

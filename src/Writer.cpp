@@ -40,12 +40,12 @@
 #include <pdal/pdal_macros.hpp>
 #include <pdal/StageFactory.hpp>
 
-//#include <iostream>
-//#include <algorithm>
-//#include <map>
+#include <iostream>
+#include <algorithm>
+#include <map>
 
-//#include <boost/algorithm/string.hpp>
-//#include <boost/algorithm/string/erase.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/erase.hpp>
 
 
 MAKE_WRITER_CREATOR(prcWriter, pdal::drivers::prc::Writer)
