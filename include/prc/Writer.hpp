@@ -89,7 +89,11 @@ protected:
     virtual void writeEnd(boost::uint64_t actualNumPointsWritten);
 
     oPRCFile m_prcFile;
-    PRCoptions grpopt;
+    //PRCoptions grpopt;
+
+    //std::string m_prcFilename;
+    //std::string m_pdfFilename;
+    int m_outputFormat;
 
 private:
 

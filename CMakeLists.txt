@@ -150,6 +150,10 @@ mark_as_advanced(CLEAR PDAL_INCLUDE_DIR)
 mark_as_advanced(CLEAR PDAL_LIBRARIES)
 include_directories(${PDAL_INCLUDE_DIR})
 
+find_library(HPDF_LIBRARY hpdf)
+find_path(HPDF_INCLUDE_DIR hpdf_u3d.h)
+include_directories(${HPDF_INCLUDE_DIR})
+
 #------------------------------------------------------------------------------
 # subdirectory controls
 #------------------------------------------------------------------------------
@@ -180,7 +184,8 @@ set(PRC_SOURCES
 add_library(${PRC_WRITER_NAME} SHARED ${PRC_SOURCES})
 target_link_libraries(${PRC_WRITER_NAME}
                       ${PDAL_LIBRARY}
-		      ${ZLIB_LIBRARY})
+		      ${ZLIB_LIBRARY}
+		      ${HPDF_LIBRARY})
 set_target_properties(${PRC_WRITER_NAME}
   PROPERTIES SOVERSION "0.1.0" )
 

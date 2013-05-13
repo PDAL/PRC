@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Pipeline version="1.0">
     <Writer type="drivers.prc.writer">
-        <Option name="filename">
-            temp/autzen-thin.prc
+        <Option name="pdf_filename">
+		/Users/bchambers/data/autzen.pdf
         </Option>
+        <Option name="prc_filename">
+		/Users/bchambers/data/autzen.prc
+	</Option>
+        <Option name="output_format">
+            pdf
+	</Option>
         <Reader type="drivers.las.reader">
             <Option name="filename">
-                data/autzen-thin.las
+		    <!--		    /Users/bchambers/dev/PRC/test/data/autzen.las-->
+		    /Users/bchambers/data/libLAS_sample_data/MtStHelens.laz
             </Option>
         </Reader>
     </Writer>
