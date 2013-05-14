@@ -35,17 +35,17 @@
 #ifndef INCLUDED_DRIVERS_PRC_WRITER_HPP
 #define INCLUDED_DRIVERS_PRC_WRITER_HPP
 
+#include <string>
+
+#include <boost/cstdint.hpp>
+
+#include <hpdf.h>
+
 #include <prc/oPRCFile.hpp>
+
 #include <pdal/Writer.hpp>
 #include <pdal/FileUtils.hpp>
 #include <pdal/StageFactory.hpp>
-
-#include <boost/cstdint.hpp>
-//#include <boost/scoped_ptr.hpp>
-//#include <boost/tuple/tuple.hpp>
-
-//#include <vector>
-#include <string>
 
 
 namespace pdal
@@ -89,11 +89,18 @@ protected:
     virtual void writeEnd(boost::uint64_t actualNumPointsWritten);
 
     oPRCFile m_prcFile;
-    //PRCoptions grpopt;
 
-    //std::string m_prcFilename;
-    //std::string m_pdfFilename;
     int m_outputFormat;
+
+    HPDF_REAL m_coox, m_cooy, m_cooz;
+
+    void setCOOx(HPDF_REAL coox) { m_coox = coox; }
+    void setCOOy(HPDF_REAL cooy) { m_cooy = cooy; }
+    void setCOOz(HPDF_REAL cooz) { m_cooz = cooz; }
+
+    HPDF_REAL getCOOx() { return m_coox; }
+    HPDF_REAL getCOOy() { return m_cooy; }
+    HPDF_REAL getCOOz() { return m_cooz; }
 
 private:
 
