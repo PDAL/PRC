@@ -140,6 +140,18 @@ endif(APPLE)
 # settings for 3rd party dependencies
 #------------------------------------------------------------------------------
 
+if(WIN32 AND MSVC)
+  set(Boost_USE_STATIC_LIBS ON)
+endif()
+set(Boost_USE_MULTITHREADED ON)
+set(Bosot_USE_STATIC_RUNTIME OFF)
+add_definitions(-DBOOST_ALL_NO_LIB)
+
+find_package(BOOST REQUIRED)
+mark_as_advanced(CLEAR Boost_INCLUDE_DIR)
+mark_as_advanced(CLEAR Boost_LIBRARIES)
+include_directories(${Boost_INCLUDE_DIR})
+
 find_package(ZLIB REQUIRED)
 mark_as_advanced(CLEAR ZLIB_INCLUDE_DIR)
 mark_as_advanced(CLEAR ZLIP_LIBRARY)
