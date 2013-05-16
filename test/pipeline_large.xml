@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Pipeline version="1.0">
+  <Writer type="drivers.prc.writer">
+    <Option name="pdf_filename">
+	    temp/MtStHelens.pdf
+    </Option>
+    <Option name="prc_filename">
+	    temp/MtStHelens.prc
+    </Option>
+    <Option name="output_format">
+      pdf
+    </Option>
+    <Reader type="drivers.las.reader">
+      <Option name="filename">
+        /Users/bchambers/data/libLAS_sample_data/MtStHelens.laz
+      </Option>
+    </Reader>
+  </Writer>
+</Pipeline>
