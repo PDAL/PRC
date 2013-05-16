@@ -1,35 +1,19 @@
 /******************************************************************************
+* This file is part of a tool for producing 3D content in the PRC format.
 * Copyright (c) 2013, Bradley J Chambers, brad.chambers@gmail.com
 *
-* All rights reserved.
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Lesser General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
 *
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following
-* conditions are met:
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU Lesser General Public License for more details.
 *
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in
-*       the documentation and/or other materials provided
-*       with the distribution.
-*     * Neither the name of Hobu, Inc. or Flaxen Geo Consulting nor the
-*       names of its contributors may be used to endorse or promote
-*       products derived from this software without specific prior
-*       written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-* FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-* COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-* BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
-* OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-* AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-* OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-* OF SUCH DAMAGE.
+* You should have received a copy of the GNU Lesser General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
 #include <prc/Writer.hpp>
@@ -64,6 +48,12 @@ enum OUTPUT_FORMAT
   OUTPUT_FORMAT_PRC
 };
 
+enum COLOR_SCALE
+{
+  COLOR_SCALE_NONE,
+  COLOR_SCALE_AUTO
+};
+
 
 namespace pdal
 {
@@ -76,6 +66,7 @@ Writer::Writer(Stage& prevStage, const Options& options)
   : pdal::Writer(prevStage, options)
   , m_prcFile(options.getOption("prc_filename").getValue<std::string>())
   , m_outputFormat(OUTPUT_FORMAT_PDF)
+  , m_colorScale(COLOR_SCALE_NONE)
 {
   std::cout << "writer\n";
   std::cout << options.getOption("prc_filename").getValue<std::string>() << std::endl;
@@ -111,6 +102,20 @@ void Writer::initialize()
     throw prc_driver_error("Unrecognized output format");
   }
 
+  std::string color_scale = getOptions().getValueOrDefault<std::string>("color_scale", "none");
+
+  if(boost::iequals(color_scale, "none"))
+    m_colorScale = COLOR_SCALE_NONE;
+  else if (boost::iequals(color_scale, "auto"))
+    m_colorScale = COLOR_SCALE_AUTO;
+  else
+  {
+    std::ostringstream oss;
+    oss << "Unrecognized color scale " << color_scale;
+    throw prc_driver_error("Unrecognized color scale");
+  }
+  std::cout << color_scale << " scale" << std::endl;
+
   return;
 }
 
@@ -123,10 +128,12 @@ Options Writer::getDefaultOptions()
   Option prc_filename("prc_filename", "", "Filename to write PRC file to");
   Option pdf_filename("pdf_filename", "", "Filename to write PDF file to");
   Option output_format("output_format", "", "PRC or PDF");
+  Option color_scale("color_scale", "", "None or auto");
 
   options.add(prc_filename);
   options.add(pdf_filename);
   options.add(output_format);
+  options.add(color_scale);
 
   return options;
 }
@@ -282,17 +289,9 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
   pdal::Dimension const& dimY = schema.getDimension("Y");
   pdal::Dimension const& dimZ = schema.getDimension("Z");
 
-  boost::optional<pdal::Dimension const&> dimR = schema.getDimensionOptional("Red");
-  boost::optional<pdal::Dimension const&> dimG = schema.getDimensionOptional("Green");
-  boost::optional<pdal::Dimension const&> dimB = schema.getDimensionOptional("Blue");
-
-  bool bHaveColor(false);
-  if (dimR && dimG && dimB)
-    bHaveColor = true;
-
-  if (bHaveColor)
+  if (m_colorScale == COLOR_SCALE_AUTO)
   {
-    std::cout << "with rgb\n";
+    std::cout << "auto scaling\n";
 
     double **points;
     points = (double**) malloc(sizeof(double*));
@@ -310,21 +309,20 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
       boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
       boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
 
-      double r = static_cast<double>(data.getField<boost::uint16_t>(*dimR, i))/255.0;
-      double g = static_cast<double>(data.getField<boost::uint16_t>(*dimG, i))/255.0;
-      double b = static_cast<double>(data.getField<boost::uint16_t>(*dimB, i))/255.0;
-
       xd = dimX.applyScaling<boost::int32_t>(x) - cx;
       yd = dimY.applyScaling<boost::int32_t>(y) - cy;
       zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
 
-//      if(i % 10000) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
+      double r = (dimZ.applyScaling<boost::int32_t>(z) - bounds.getMinimum(2)) / (bounds.getMaximum(2) - bounds.getMinimum(2));
+      double g, b;
+      g = b = 0.0f;
+      if(i % 1000) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
 
       points[0][0] = xd;
       points[0][1] = yd;
       points[0][2] = zd;
 
-      m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,g,b,1.0), 5.0);
+      m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,0.0,0.0,1.0), 5.0);
 
       numPoints++;
     }
@@ -336,45 +334,100 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
   }
   else
   {
-    std::cout << "no rgb\n";
+    boost::optional<pdal::Dimension const&> dimR = schema.getDimensionOptional("Red");
+    boost::optional<pdal::Dimension const&> dimG = schema.getDimensionOptional("Green");
+    boost::optional<pdal::Dimension const&> dimB = schema.getDimensionOptional("Blue");
 
-    double **points;
-    points = (double**) malloc(data.getNumPoints()*sizeof(double*));
-    for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+    bool bHaveColor(false);
+    if (dimR && dimG && dimB)
+      bHaveColor = true;
+
+    if (bHaveColor)
     {
-      points[i] = (double*) malloc(3*sizeof(double));
+      std::cout << "with rgb\n";
+
+      double **points;
+      points = (double**) malloc(sizeof(double*));
+      {
+        points[0] = (double*) malloc(3*sizeof(double));
+      }
+
+      double xd(0.0);
+      double yd(0.0);
+      double zd(0.0);
+
+      for(boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+      {
+        boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
+        boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
+        boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+
+        double r = static_cast<double>(data.getField<boost::uint16_t>(*dimR, i))/255.0;
+        double g = static_cast<double>(data.getField<boost::uint16_t>(*dimG, i))/255.0;
+        double b = static_cast<double>(data.getField<boost::uint16_t>(*dimB, i))/255.0;
+
+        xd = dimX.applyScaling<boost::int32_t>(x) - cx;
+        yd = dimY.applyScaling<boost::int32_t>(y) - cy;
+        zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+
+        if(i % 1000) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
+
+        points[0][0] = xd;
+        points[0][1] = yd;
+        points[0][2] = zd;
+
+        m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,g,b,1.0), 5.0);
+
+        numPoints++;
+      }
+
+      {
+        free(points[0]);
+      }
+      free(points);
     }
-
-    double xd(0.0);
-    double yd(0.0);
-    double zd(0.0);
-
-    for(boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+    else
     {
-      boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
-      boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
-      boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+      std::cout << "no rgb\n";
 
-      xd = dimX.applyScaling<boost::int32_t>(x) - cx;
-      yd = dimY.applyScaling<boost::int32_t>(y) - cy;
-      zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+      double **points;
+      points = (double**) malloc(data.getNumPoints()*sizeof(double*));
+      for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+      {
+        points[i] = (double*) malloc(3*sizeof(double));
+      }
 
-//      if(i % 10000) printf("%f %f %f\n", xd, yd, zd);
+      double xd(0.0);
+      double yd(0.0);
+      double zd(0.0);
 
-      points[i][0] = xd;
-      points[i][1] = yd;
-      points[i][2] = zd;
+      for(boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+      {
+        boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
+        boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
+        boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
 
-      numPoints++;
+        xd = dimX.applyScaling<boost::int32_t>(x) - cx;
+        yd = dimY.applyScaling<boost::int32_t>(y) - cy;
+        zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+
+  //      if(i % 10000) printf("%f %f %f\n", xd, yd, zd);
+
+        points[i][0] = xd;
+        points[i][1] = yd;
+        points[i][2] = zd;
+
+        numPoints++;
+      }
+
+      m_prcFile.addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
+
+      for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+      {
+        free(points[i]);
+      }
+      free(points);
     }
-
-    m_prcFile.addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
-
-    for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
-    {
-      free(points[i]);
-    }
-    free(points);
   }
 
   return numPoints;

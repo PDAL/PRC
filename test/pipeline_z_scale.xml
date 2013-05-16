@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Pipeline version="1.0">
+  <Writer type="drivers.prc.writer">
+    <Option name="pdf_filename">
+	    temp/out.pdf
+    </Option>
+    <Option name="prc_filename">
+	    temp/out.prc
+    </Option>
+    <Option name="output_format">
+      pdf
+    </Option>
+    <Option name="color_scale">
+      auto
+    </Option>
+    <Filter type="filters.decimation">
+      <Option name="step">256</Option>
+      <Reader type="drivers.las.reader">
+        <Option name="filename">
+          /Users/bchambers/data/libLAS_sample_data/MtStHelens.laz
+        </Option>
+      </Reader>
+    </Filter>
+  </Writer>
+</Pipeline>
