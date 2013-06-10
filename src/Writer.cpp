@@ -249,8 +249,8 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
     }
     std::cout << "create annotation: " << HPDF_GetError(pdf) << std::endl;
 
-    HPDF_Dict action = (HPDF_Dict) HPDF_Dict_GetItem( annot, "3DA", HPDF_OCLASS_DICT );
-    HPDF_Dict_AddBoolean( action, "TB", HPDF_TRUE );
+    //HPDF_Dict action = (HPDF_Dict) HPDF_Dict_GetItem( annot, "3DA", HPDF_OCLASS_DICT );
+    //HPDF_Dict_AddBoolean( action, "TB", HPDF_TRUE );
 
     std::cout << "annotated\n";
 
