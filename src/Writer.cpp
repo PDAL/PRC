@@ -71,6 +71,14 @@ Writer::Writer(Stage& prevStage, const Options& options)
   std::cout << "writer\n";
   std::cout << options.getOption("prc_filename").getValue<std::string>() << std::endl;
 
+  m_bounds = prevStage.getBounds();
+  double zmin = m_bounds.getMinimum(2);
+  double zmax = m_bounds.getMaximum(2);
+  double cz = (zmax-zmin)/2+zmin;
+  HPDF_REAL cooz = static_cast<HPDF_REAL>(cz);
+
+  printf("cz: %f, min: %f, max: %f, cooz: %f\n", cz, zmin, zmax, cooz);
+
   return;
 }
 
@@ -116,6 +124,10 @@ void Writer::initialize()
   }
   std::cout << color_scale << " scale" << std::endl;
 
+  m_fov = getOptions().getValueOrDefault<double>("fov", 30.0f);
+  m_heading = getOptions().getValueOrDefault<double>("heading", 0.0f);
+
+
   return;
 }
 
@@ -129,11 +141,15 @@ Options Writer::getDefaultOptions()
   Option pdf_filename("pdf_filename", "", "Filename to write PDF file to");
   Option output_format("output_format", "", "PRC or PDF");
   Option color_scale("color_scale", "", "None or auto");
+  Option fov("fov", "", "Field of View");
+  Option heading("heading", "", "Camera heading");
 
   options.add(prc_filename);
   options.add(pdf_filename);
   options.add(output_format);
   options.add(color_scale);
+  options.add(fov);
+  options.add(heading);
 
   return options;
 }
@@ -219,13 +235,16 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
     HPDF_REAL coox = getCOOx();
     HPDF_REAL cooy = getCOOy();
     HPDF_REAL cooz = getCOOz();
-    std::cout << "set cooz: " << HPDF_GetError(pdf) << std::endl;
+    std::cout << "get cooz: " << cooz << " error code " << HPDF_GetError(pdf) << std::endl;
 
-    coox = cooy = 0.0;
+    coox = cooy = cooz = 0.0;
 
     printf("%f %f %f\n", coox, cooy, cooz);
 
-    HPDF_3DView_SetCamera( view, coox, cooy, cooz, 0, 0, 1, 4*cooz, 0 );
+	printf("width: %f, tan: %f, z: %f\n", (m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2, std::tan(15.0f), -((m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2)/(std::tan(15.0f)));
+	printf("from caller - fov: %f heading: %f\n", m_fov, m_heading);
+
+    HPDF_3DView_SetCamera( view, coox, cooy, cooz, 0, 0, 1, 200, 0 );
     std::cout << "set camera: " << HPDF_GetError(pdf) << std::endl;
     HPDF_3DView_SetPerspectiveProjection( view, 30.0 );
     std::cout << "set perspective: " << HPDF_GetError(pdf) << std::endl;
@@ -273,15 +292,17 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
   boost::uint32_t numPoints = 0;
 
-  const pdal::Bounds<double>& bounds = data.getSpatialBounds();
+  //const pdal::Bounds<double>& bounds = m_prevStage.getBounds();
 
-  double cx = (bounds.getMaximum(0)-bounds.getMinimum(0))/2+bounds.getMinimum(0);
-  double cy = (bounds.getMaximum(1)-bounds.getMinimum(1))/2+bounds.getMinimum(1);
-  double cz = (bounds.getMaximum(2)-bounds.getMinimum(2))/2+bounds.getMinimum(2);
+  double cx = (m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2+m_bounds.getMinimum(0);
+  double cy = (m_bounds.getMaximum(1)-m_bounds.getMinimum(1))/2+m_bounds.getMinimum(1);
+  double cz = (m_bounds.getMaximum(2)-m_bounds.getMinimum(2))/2+m_bounds.getMinimum(2);
 
-  setCOOx(static_cast<HPDF_REAL>((bounds.getMaximum(0)-bounds.getMinimum(0))/2+bounds.getMinimum(0)));
-  setCOOy(static_cast<HPDF_REAL>((bounds.getMaximum(1)-bounds.getMinimum(1))/2+bounds.getMinimum(1)));
-  setCOOz(static_cast<HPDF_REAL>((bounds.getMaximum(2)-bounds.getMinimum(2))/2+bounds.getMinimum(2)));
+  setCOOx(static_cast<HPDF_REAL>(cx));
+  setCOOy(static_cast<HPDF_REAL>(cy));
+  setCOOz(static_cast<HPDF_REAL>(cz));
+
+  printf("cz: %f, min: %f, max: %f, cooz: %f\n", cz, m_bounds.getMinimum(2), m_bounds.getMaximum(2), getCOOz());
 
   pdal::Schema const& schema = data.getSchema();
 
@@ -313,7 +334,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
       yd = dimY.applyScaling<boost::int32_t>(y) - cy;
       zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
 
-      double r = (dimZ.applyScaling<boost::int32_t>(z) - bounds.getMinimum(2)) / (bounds.getMaximum(2) - bounds.getMinimum(2));
+      double r = (dimZ.applyScaling<boost::int32_t>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
       double g, b;
       g = b = 0.0f;
       if(i % 1000) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
@@ -396,29 +417,53 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
       {
         points[i] = (double*) malloc(3*sizeof(double));
       }
-
+	  
       double xd(0.0);
       double yd(0.0);
       double zd(0.0);
 
-      for(boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
-      {
-        boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
-        boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
-        boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+	  if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
+	  {
+		  for(boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+		  {
+			float x = data.getField<float>(dimX, i);
+			float y = data.getField<float>(dimY, i);
+			float z = data.getField<float>(dimZ, i);
 
-        xd = dimX.applyScaling<boost::int32_t>(x) - cx;
-        yd = dimY.applyScaling<boost::int32_t>(y) - cy;
-        zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+			xd = dimX.applyScaling<float>(x) - cx;
+			yd = dimY.applyScaling<float>(y) - cy;
+			zd = dimZ.applyScaling<float>(z) - cz;
 
-  //      if(i % 10000) printf("%f %f %f\n", xd, yd, zd);
+//			if(i % 10000) printf("%f %f %f\n", xd, yd, zd);
 
-        points[i][0] = xd;
-        points[i][1] = yd;
-        points[i][2] = zd;
+			points[i][0] = xd;
+			points[i][1] = yd;
+			points[i][2] = zd;
 
-        numPoints++;
-      }
+			numPoints++;
+		  }
+	  }
+	  else // for now, assume the else is ints, knowing it's a total hack
+	  {
+		  for(boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+		  {
+			boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
+			boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
+			boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+
+			xd = dimX.applyScaling<boost::int32_t>(x) - cx;
+			yd = dimY.applyScaling<boost::int32_t>(y) - cy;
+			zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+
+			if(i % 10000) printf("%f %f %f\n", xd, yd, zd);
+
+			points[i][0] = xd;
+			points[i][1] = yd;
+			points[i][2] = zd;
+
+			numPoints++;
+		  }
+	  }
 
       m_prcFile.addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
 

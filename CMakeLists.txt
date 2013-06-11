@@ -71,6 +71,10 @@ endif(WIN32)
 #------------------------------------------------------------------------------
 
 if(WIN32)
+    add_definitions("-DPDAL_DLL_EXPORT=1")
+endif()
+
+if(WIN32)
   if (MSVC)
     if (MSVC80 OR MSVC90 OR MSVC10 OR MSVC11)
       add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
@@ -172,7 +176,7 @@ include_directories(${HPDF_INCLUDE_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-set(PRC_WRITER_NAME pdal_plugin_writer_prc)
+set(PRC_WRITER_NAME libpdal_plugin_writer_prc)
 
 set(PRC_HPP
   include/prc/PRC.hpp

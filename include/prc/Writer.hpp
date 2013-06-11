@@ -28,6 +28,7 @@
 #include <prc/oPRCFile.hpp>
 
 #include <pdal/pdal_internal.hpp>
+#include <pdal/Bounds.hpp>
 #include <pdal/Writer.hpp>
 #include <pdal/FileUtils.hpp>
 #include <pdal/StageFactory.hpp>
@@ -75,8 +76,13 @@ protected:
 
     oPRCFile m_prcFile;
 
+	pdal::Bounds<double> m_bounds;
+
     int m_outputFormat;
     int m_colorScale;
+
+	double m_fov;
+	double m_heading;
 
     HPDF_REAL m_coox, m_cooy, m_cooz;
 
