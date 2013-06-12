@@ -83,6 +83,14 @@ protected:
 
     double m_fov;
     double m_heading;
+    double m_coox;
+    double m_cooy;
+    double m_cooz;
+    double m_c2cx;
+    double m_c2cy;
+    double m_c2cz;
+    double m_roo;
+    double m_roll;
 
     HPDF_REAL m_coox, m_cooy, m_cooz;
 

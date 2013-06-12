@@ -68,7 +68,6 @@ Writer::Writer(Stage& prevStage, const Options& options)
     , m_outputFormat(OUTPUT_FORMAT_PDF)
     , m_colorScale(COLOR_SCALE_NONE)
 {
-    std::cout << "writer\n";
     std::cout << options.getOption("prc_filename").getValue<std::string>() << std::endl;
 
     m_bounds = prevStage.getBounds();
@@ -91,11 +90,7 @@ Writer::~Writer()
 
 void Writer::initialize()
 {
-    std::cout << "init\n";
-
     pdal::Writer::initialize();
-
-    std::cout << "succes\n";
 
     std::string output_format = getOptions().getValueOrDefault<std::string>("output_format", "pdf");
 
@@ -126,11 +121,17 @@ void Writer::initialize()
 
     m_fov = getOptions().getValueOrDefault<double>("fov", 30.0f);
     m_heading = getOptions().getValueOrDefault<double>("heading", 0.0f);
-
+    m_coox = getOptions().getValueOrDefault<double>("coox", 0.0f);
+    m_cooy = getOptions().getValueOrDefault<double>("cooy", 0.0f);
+    m_cooz = getOptions().getValueOrDefault<double>("cooz", 0.0f);
+    m_c2cx = getOptions().getValueOrDefault<double>("c2cx", 0.0f);
+    m_c2cy = getOptions().getValueOrDefault<double>("c2cy", 0.0f);
+    m_c2cz = getOptions().getValueOrDefault<double>("c2cz", 0.0f);
+    m_roo = getOptions().getValueOrDefault<double>("roo", 0.0f);
+    m_roll = getOptions().getValueOrDefault<double>("roll", 0.0f);
 
     return;
 }
-
 
 
 Options Writer::getDefaultOptions()
@@ -143,6 +144,14 @@ Options Writer::getDefaultOptions()
     Option color_scale("color_scale", "", "None or auto");
     Option fov("fov", "", "Field of View");
     Option heading("heading", "", "Camera heading");
+    Option coox("coox", "", "Camera coox");
+    Option cooy("cooy", "", "Camera cooy");
+    Option cooz("cooz", "", "Camera cooz");
+    Option c2cx("c2cx", "", "Camera c2cx");
+    Option c2cy("c2cy", "", "Camera c2cy");
+    Option c2cz("c2cz", "", "Camera c2cz");
+    Option roo("roo", "", "Camera roo");
+    Option roll("roll", "", "Camera roll");
 
     options.add(prc_filename);
     options.add(pdf_filename);
@@ -150,6 +159,14 @@ Options Writer::getDefaultOptions()
     options.add(color_scale);
     options.add(fov);
     options.add(heading);
+    options.add(coox);
+    options.add(cooy);
+    options.add(cooz);
+    options.add(c2cx);
+    options.add(c2cy);
+    options.add(c2cz);
+    options.add(roo);
+    options.add(roll);
 
     return options;
 }
@@ -164,30 +181,20 @@ void Writer::writeBegin(boost::uint64_t /*targetNumPointsToWrite*/)
 
     m_prcFile.begingroup("points",&grpopt);
 
-    std::cout << "begin\n";
-
     return;
 }
 
 
 void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
 {
-    std::cout << "end\n";
-
     m_prcFile.endgroup();
     m_prcFile.finish();
 
-    std::cout << "format is " << m_outputFormat << std::endl;
-
     if (m_outputFormat == OUTPUT_FORMAT_PDF)
     {
-        std::cout << "detected PDF\n";
-
         const double width = 256.0f;
         const double height = 256.0f;
         const double depth = std::sqrt(width*height);
-
-        std::cout << width << " " << height << " " << depth << std::endl;
 
         const HPDF_Rect rect = { 0, 0, width, height };
         HPDF_Doc pdf;
@@ -202,25 +209,19 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
             printf("error: cannot create PdfDoc object\n");
             return;
         }
-        std::cout << HPDF_GetError(pdf) << std::endl;
         pdf->pdf_version = HPDF_VER_17;
-
-        std::cout << "pdf version " << pdf->pdf_version << std::endl;
 
         page = HPDF_AddPage(pdf);
         HPDF_Page_SetWidth(page, width);
         HPDF_Page_SetHeight(page, height);
 
         std::string prcFilename = getOptions().getValueOrThrow<std::string>("prc_filename");
-        std::cout << prcFilename;
         u3d = HPDF_LoadU3DFromFile(pdf, prcFilename.c_str());
         if (!u3d)
         {
             printf("error: cannot load U3D object\n");
             return;
         }
-        std::cout << HPDF_GetError(pdf) << std::endl;
-        std::cout << " loaded\n";
 
         view = HPDF_Create3DView(u3d->mmgr, "DefaultView");
         if (!view)
@@ -228,14 +229,10 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
             printf("error: cannot create view\n");
             return;
         }
-        std::cout << "create view: " << HPDF_GetError(pdf) << std::endl;
-
-        std::cout << "default view\n";
 
         HPDF_REAL coox = getCOOx();
         HPDF_REAL cooy = getCOOy();
         HPDF_REAL cooz = getCOOz();
-        std::cout << "get cooz: " << cooz << " error code " << HPDF_GetError(pdf) << std::endl;
 
         coox = cooy = cooz = 0.0;
 
@@ -245,20 +242,12 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
         printf("from caller - fov: %f heading: %f\n", m_fov, m_heading);
 
         HPDF_3DView_SetCamera(view, coox, cooy, cooz, 0, 0, 1, 200, 0);
-        std::cout << "set camera: " << HPDF_GetError(pdf) << std::endl;
         HPDF_3DView_SetPerspectiveProjection(view, 30.0);
-        std::cout << "set perspective: " << HPDF_GetError(pdf) << std::endl;
         HPDF_3DView_SetBackgroundColor(view, 0, 0, 0);
-        std::cout << "set background: " << HPDF_GetError(pdf) << std::endl;
         HPDF_3DView_SetLighting(view, "Headlamp");
-        std::cout << "set lighting: " << HPDF_GetError(pdf) << std::endl;
-
-        std::cout << "view created\n";
 
         HPDF_U3D_Add3DView(u3d, view);
-        std::cout << "add view: " << HPDF_GetError(pdf) << std::endl;
         HPDF_U3D_SetDefault3DView(u3d, "DefaultView");
-        std::cout << "set default view: " << HPDF_GetError(pdf) << std::endl;
 
         annot = HPDF_Page_Create3DAnnot(page, rect, u3d);
         if (!annot)
@@ -266,19 +255,12 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
             printf("error: cannot create annotation\n");
             return;
         }
-        std::cout << "create annotation: " << HPDF_GetError(pdf) << std::endl;
 
         //HPDF_Dict action = (HPDF_Dict) HPDF_Dict_GetItem( annot, "3DA", HPDF_OCLASS_DICT );
         //HPDF_Dict_AddBoolean( action, "TB", HPDF_TRUE );
 
-        std::cout << "annotated\n";
-
         std::string pdfFilename = getOptions().getValueOrThrow<std::string>("pdf_filename");
-        std::cout << pdfFilename;
         HPDF_STATUS success = HPDF_SaveToFile(pdf, pdfFilename.c_str());
-        std::cout << " saved\n";
-        std::cout << success << std::endl;
-        std::cout << HPDF_GetErrorDetail(pdf) << std::endl;
 
         HPDF_Free(pdf);
     }
@@ -288,11 +270,7 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
 
 boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 {
-    std::cout << "write\n";
-
     boost::uint32_t numPoints = 0;
-
-    //const pdal::Bounds<double>& bounds = m_prevStage.getBounds();
 
     double cx = (m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2+m_bounds.getMinimum(0);
     double cy = (m_bounds.getMaximum(1)-m_bounds.getMinimum(1))/2+m_bounds.getMinimum(1);
@@ -312,8 +290,6 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
     if (m_colorScale == COLOR_SCALE_AUTO)
     {
-        std::cout << "auto scaling\n";
-
         double **points;
         points = (double**) malloc(sizeof(double*));
         {
@@ -365,8 +341,6 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
         if (bHaveColor)
         {
-            std::cout << "with rgb\n";
-
             double **points;
             points = (double**) malloc(sizeof(double*));
             {
@@ -409,8 +383,6 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
         }
         else
         {
-            std::cout << "no rgb\n";
-
             double **points;
             points = (double**) malloc(data.getNumPoints()*sizeof(double*));
             for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
