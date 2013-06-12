@@ -76,23 +76,41 @@ protected:
 
     oPRCFile m_prcFile;
 
-	pdal::Bounds<double> m_bounds;
+    pdal::Bounds<double> m_bounds;
 
     int m_outputFormat;
     int m_colorScale;
 
-	double m_fov;
-	double m_heading;
+    double m_fov;
+    double m_heading;
 
     HPDF_REAL m_coox, m_cooy, m_cooz;
 
-    void setCOOx(HPDF_REAL coox) { m_coox = coox; }
-    void setCOOy(HPDF_REAL cooy) { m_cooy = cooy; }
-    void setCOOz(HPDF_REAL cooz) { m_cooz = cooz; }
+    void setCOOx(HPDF_REAL coox)
+    {
+        m_coox = coox;
+    }
+    void setCOOy(HPDF_REAL cooy)
+    {
+        m_cooy = cooy;
+    }
+    void setCOOz(HPDF_REAL cooz)
+    {
+        m_cooz = cooz;
+    }
 
-    HPDF_REAL getCOOx() { return m_coox; }
-    HPDF_REAL getCOOy() { return m_cooy; }
-    HPDF_REAL getCOOz() { return m_cooz; }
+    HPDF_REAL getCOOx()
+    {
+        return m_coox;
+    }
+    HPDF_REAL getCOOy()
+    {
+        return m_cooy;
+    }
+    HPDF_REAL getCOOz()
+    {
+        return m_cooz;
+    }
 
 private:
 
