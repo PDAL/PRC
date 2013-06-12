@@ -81,44 +81,15 @@ protected:
     int m_outputFormat;
     int m_colorScale;
 
-    double m_fov;
-    double m_heading;
-    double m_coox;
-    double m_cooy;
-    double m_cooz;
-    double m_c2cx;
-    double m_c2cy;
-    double m_c2cz;
-    double m_roo;
-    double m_roll;
-
-    HPDF_REAL m_coox, m_cooy, m_cooz;
-
-    void setCOOx(HPDF_REAL coox)
-    {
-        m_coox = coox;
-    }
-    void setCOOy(HPDF_REAL cooy)
-    {
-        m_cooy = cooy;
-    }
-    void setCOOz(HPDF_REAL cooz)
-    {
-        m_cooz = cooz;
-    }
-
-    HPDF_REAL getCOOx()
-    {
-        return m_coox;
-    }
-    HPDF_REAL getCOOy()
-    {
-        return m_cooy;
-    }
-    HPDF_REAL getCOOz()
-    {
-        return m_cooz;
-    }
+    HPDF_REAL m_fov;
+    HPDF_REAL m_coox;
+    HPDF_REAL m_cooy;
+    HPDF_REAL m_cooz;
+    HPDF_REAL m_c2cx;
+    HPDF_REAL m_c2cy;
+    HPDF_REAL m_c2cz;
+    HPDF_REAL m_roo;
+    HPDF_REAL m_roll;
 
 private:
 

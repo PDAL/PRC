@@ -117,18 +117,16 @@ void Writer::initialize()
         oss << "Unrecognized color scale " << color_scale;
         throw prc_driver_error("Unrecognized color scale");
     }
-    std::cout << color_scale << " scale" << std::endl;
 
-    m_fov = getOptions().getValueOrDefault<double>("fov", 30.0f);
-    m_heading = getOptions().getValueOrDefault<double>("heading", 0.0f);
-    m_coox = getOptions().getValueOrDefault<double>("coox", 0.0f);
-    m_cooy = getOptions().getValueOrDefault<double>("cooy", 0.0f);
-    m_cooz = getOptions().getValueOrDefault<double>("cooz", 0.0f);
-    m_c2cx = getOptions().getValueOrDefault<double>("c2cx", 0.0f);
-    m_c2cy = getOptions().getValueOrDefault<double>("c2cy", 0.0f);
-    m_c2cz = getOptions().getValueOrDefault<double>("c2cz", 0.0f);
-    m_roo = getOptions().getValueOrDefault<double>("roo", 0.0f);
-    m_roll = getOptions().getValueOrDefault<double>("roll", 0.0f);
+    m_fov = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("fov", 30.0f));
+    m_coox = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("coox", 0.0f));
+    m_cooy = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("cooy", 0.0f));
+    m_cooz = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("cooz", 0.0f));
+    m_c2cx = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("c2cx", 0.0f));
+    m_c2cy = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("c2cy", 0.0f));
+    m_c2cz = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("c2cz", 1.0f));
+    m_roo = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("roo", 20.0f));
+    m_roll = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("roll", 0.0f));
 
     return;
 }
@@ -143,7 +141,6 @@ Options Writer::getDefaultOptions()
     Option output_format("output_format", "", "PRC or PDF");
     Option color_scale("color_scale", "", "None or auto");
     Option fov("fov", "", "Field of View");
-    Option heading("heading", "", "Camera heading");
     Option coox("coox", "", "Camera coox");
     Option cooy("cooy", "", "Camera cooy");
     Option cooz("cooz", "", "Camera cooz");
@@ -158,7 +155,6 @@ Options Writer::getDefaultOptions()
     options.add(output_format);
     options.add(color_scale);
     options.add(fov);
-    options.add(heading);
     options.add(coox);
     options.add(cooy);
     options.add(cooz);
@@ -230,18 +226,9 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
             return;
         }
 
-        HPDF_REAL coox = getCOOx();
-        HPDF_REAL cooy = getCOOy();
-        HPDF_REAL cooz = getCOOz();
+		printf("%f %f %f %f %f %f %f %f\n", m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
 
-        coox = cooy = cooz = 0.0;
-
-        printf("%f %f %f\n", coox, cooy, cooz);
-
-        printf("width: %f, tan: %f, z: %f\n", (m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2, std::tan(15.0f), -((m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2)/(std::tan(15.0f)));
-        printf("from caller - fov: %f heading: %f\n", m_fov, m_heading);
-
-        HPDF_3DView_SetCamera(view, coox, cooy, cooz, 0, 0, 1, 200, 0);
+        HPDF_3DView_SetCamera(view, m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
         HPDF_3DView_SetPerspectiveProjection(view, 30.0);
         HPDF_3DView_SetBackgroundColor(view, 0, 0, 0);
         HPDF_3DView_SetLighting(view, "Headlamp");
@@ -276,12 +263,6 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
     double cy = (m_bounds.getMaximum(1)-m_bounds.getMinimum(1))/2+m_bounds.getMinimum(1);
     double cz = (m_bounds.getMaximum(2)-m_bounds.getMinimum(2))/2+m_bounds.getMinimum(2);
 
-    setCOOx(static_cast<HPDF_REAL>(cx));
-    setCOOy(static_cast<HPDF_REAL>(cy));
-    setCOOz(static_cast<HPDF_REAL>(cz));
-
-    printf("cz: %f, min: %f, max: %f, cooz: %f\n", cz, m_bounds.getMinimum(2), m_bounds.getMaximum(2), getCOOz());
-
     pdal::Schema const& schema = data.getSchema();
 
     pdal::Dimension const& dimX = schema.getDimension("X");
@@ -302,26 +283,64 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
         for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
         {
-            boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
-            boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
-            boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+			if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
+            {
+                for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+                {
+                    float x = data.getField<float>(dimX, i);
+                    float y = data.getField<float>(dimY, i);
+                    float z = data.getField<float>(dimZ, i);
 
-            xd = dimX.applyScaling<boost::int32_t>(x) - cx;
-            yd = dimY.applyScaling<boost::int32_t>(y) - cy;
-            zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+                    xd = dimX.applyScaling<float>(x) - cx;
+                    yd = dimY.applyScaling<float>(y) - cy;
+                    zd = dimZ.applyScaling<float>(z) - cz;
 
-            double r = (dimZ.applyScaling<boost::int32_t>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
-            double g, b;
-            g = b = 0.0f;
-            if (i % 1000) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
+                    points[i][0] = xd;
+                    points[i][1] = yd;
+                    points[i][2] = zd;
 
-            points[0][0] = xd;
-            points[0][1] = yd;
-            points[0][2] = zd;
+					double r = (dimZ.applyScaling<float>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
+					double g, b;
+					g = b = 0.0f;
+					if (i % 1000 == 0) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
 
-            m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,0.0,0.0,1.0), 5.0);
+                    m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,0.0,0.0,1.0), 5.0);
 
-            numPoints++;
+                    numPoints++;
+                }
+            }
+			else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
+            {
+                for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+                {
+                    boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
+                    boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
+                    boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+
+                    xd = dimX.applyScaling<boost::int32_t>(x) - cx;
+                    yd = dimY.applyScaling<boost::int32_t>(y) - cy;
+                    zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+
+                    if (i % 10000) printf("%f %f %f\n", xd, yd, zd);
+
+                    points[i][0] = xd;
+                    points[i][1] = yd;
+                    points[i][2] = zd;
+
+					double r = (dimZ.applyScaling<boost::int32_t>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
+					double g, b;
+					g = b = 0.0f;
+					if (i % 1000 == 0) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
+
+                    m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,0.0,0.0,1.0), 5.0);
+
+                    numPoints++;
+                }
+            }
+			else
+			{
+				std::cerr << "didn't detect a suitable dimension interpretation\n";
+			}
         }
 
         {
@@ -365,7 +384,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                 yd = dimY.applyScaling<boost::int32_t>(y) - cy;
                 zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
 
-                if (i % 1000) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
+                if (i % 1000 == 0) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
 
                 points[0][0] = xd;
                 points[0][1] = yd;
@@ -406,8 +425,6 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                     yd = dimY.applyScaling<float>(y) - cy;
                     zd = dimZ.applyScaling<float>(z) - cz;
 
-//          if(i % 10000) printf("%f %f %f\n", xd, yd, zd);
-
                     points[i][0] = xd;
                     points[i][1] = yd;
                     points[i][2] = zd;
@@ -415,7 +432,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                     numPoints++;
                 }
             }
-            else // for now, assume the else is ints, knowing it's a total hack
+			else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
             {
                 for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
                 {
@@ -436,6 +453,10 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                     numPoints++;
                 }
             }
+			else
+			{
+				std::cerr << "didn't detect a suitable dimension interpretation\n";
+			}
 
             m_prcFile.addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
 
