@@ -226,7 +226,7 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
             return;
         }
 
-		printf("%f %f %f %f %f %f %f %f\n", m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
+        printf("%f %f %f %f %f %f %f %f\n", m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
 
         HPDF_3DView_SetCamera(view, m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
         HPDF_3DView_SetPerspectiveProjection(view, 30.0);
@@ -283,7 +283,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
         for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
         {
-			if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
+            if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
             {
                 for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
                 {
@@ -299,17 +299,17 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                     points[i][1] = yd;
                     points[i][2] = zd;
 
-					double r = (dimZ.applyScaling<float>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
-					double g, b;
-					g = b = 0.0f;
-					if (i % 1000 == 0) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
+                    double r = (dimZ.applyScaling<float>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
+                    double g, b;
+                    g = b = 0.0f;
+                    if (i % 1000 == 0) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
 
                     m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,0.0,0.0,1.0), 5.0);
 
                     numPoints++;
                 }
             }
-			else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
+            else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
             {
                 for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
                 {
@@ -327,20 +327,20 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                     points[i][1] = yd;
                     points[i][2] = zd;
 
-					double r = (dimZ.applyScaling<boost::int32_t>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
-					double g, b;
-					g = b = 0.0f;
-					if (i % 1000 == 0) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
+                    double r = (dimZ.applyScaling<boost::int32_t>(z) - m_bounds.getMinimum(2)) / (m_bounds.getMaximum(2) - m_bounds.getMinimum(2));
+                    double g, b;
+                    g = b = 0.0f;
+                    if (i % 1000 == 0) printf("%f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
 
                     m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,0.0,0.0,1.0), 5.0);
 
                     numPoints++;
                 }
             }
-			else
-			{
-				std::cerr << "didn't detect a suitable dimension interpretation\n";
-			}
+            else
+            {
+                std::cerr << "didn't detect a suitable dimension interpretation\n";
+            }
         }
 
         {
@@ -432,7 +432,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                     numPoints++;
                 }
             }
-			else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
+            else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
             {
                 for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
                 {
@@ -453,10 +453,10 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
                     numPoints++;
                 }
             }
-			else
-			{
-				std::cerr << "didn't detect a suitable dimension interpretation\n";
-			}
+            else
+            {
+                std::cerr << "didn't detect a suitable dimension interpretation\n";
+            }
 
             m_prcFile.addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
 
