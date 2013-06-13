@@ -176,7 +176,11 @@ include_directories(${HPDF_INCLUDE_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-set(PRC_WRITER_NAME libpdal_plugin_writer_prc)
+if(WIN32)
+  set(PRC_WRITER_NAME libpdal_plugin_writer_prc)
+else(WIN32)
+  set(PRC_WRITER_NAME pdal_plugin_writer_prc)
+endif(WIN32)
 
 set(PRC_HPP
   include/prc/PRC.hpp
@@ -202,8 +206,8 @@ target_link_libraries(${PRC_WRITER_NAME}
                       ${PDAL_LIBRARY}
 		      ${ZLIB_LIBRARY}
 		      ${HPDF_LIBRARY})
-set_target_properties(${PRC_WRITER_NAME}
-  PROPERTIES SOVERSION "0.1.0" )
+set_target_properties(${PRC_WRITER_NAME} PROPERTIES
+  SOVERSION "0.1.0" )
 
 ###############################################################################
 # Targets installation

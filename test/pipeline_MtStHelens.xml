@@ -11,14 +11,14 @@
       pdf
     </Option>
     <Option name="color_scheme">
-      oranges
+      blue_green
     </Option>
     <Option name="contrast_stretch">
-      linear
+      sqrt
     </Option>
       <Reader type="drivers.las.reader">
         <Option name="filename">
-          /Users/bchambers/data/libLAS_sample_data/Serpent Mound Model LAS Data.las
+          /Users/bchambers/data/libLAS_sample_data/MtStHelens.laz
         </Option>
       </Reader>
   </Writer>

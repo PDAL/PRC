@@ -79,7 +79,8 @@ protected:
     pdal::Bounds<double> m_bounds;
 
     int m_outputFormat;
-    int m_colorScale;
+    int m_colorScheme;
+    int m_contrastStretch;
 
     HPDF_REAL m_fov;
     HPDF_REAL m_coox;
