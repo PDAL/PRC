@@ -72,7 +72,7 @@ namespace prc
 
 Writer::Writer(Stage& prevStage, const Options& options)
     : pdal::Writer(prevStage, options)
-    , m_prcFile(options.getOption("prc_filename").getValue<std::string>())
+    , m_prcFile(options.getOption("prc_filename").getValue<std::string>(),1000)
     , m_outputFormat(OUTPUT_FORMAT_PDF)
     , m_colorScheme(COLOR_SCHEME_SOLID)
     , m_contrastStretch(CONTRAST_STRETCH_LINEAR)
