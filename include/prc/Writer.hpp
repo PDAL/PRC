@@ -62,6 +62,7 @@ class PDAL_DLL Writer : public pdal::Writer
 {
 public:
     SET_STAGE_NAME("drivers.prc.writer", "PRC Writer")
+    SET_STAGE_ENABLED(true)
 
     Writer(Stage& prevStage, const Options&);
     ~Writer();
