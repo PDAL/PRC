@@ -206,8 +206,8 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
 
     if (m_outputFormat == OUTPUT_FORMAT_PDF)
     {
-        const double width = 256.0f;
-        const double height = 256.0f;
+        const float width = 256.0f;
+        const float height = 256.0f;
         const double depth = std::sqrt(width*height);
 
         const HPDF_Rect rect = { 0, 0, width, height };
@@ -255,7 +255,7 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
         HPDF_U3D_Add3DView(u3d, view);
         HPDF_U3D_SetDefault3DView(u3d, "DefaultView");
 
-        annot = HPDF_Page_Create3DAnnot(page, rect, u3d);
+        annot = HPDF_Page_Create3DAnnot(page, rect, false, false, u3d, NULL);
         if (!annot)
         {
             printf("error: cannot create annotation\n");
