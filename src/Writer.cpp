@@ -255,7 +255,10 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
         HPDF_U3D_Add3DView(u3d, view);
         HPDF_U3D_SetDefault3DView(u3d, "DefaultView");
 
-        annot = HPDF_Page_Create3DAnnot(page, rect, false, false, u3d, NULL);
+        // libharu master changes things slightly
+        //annot = HPDF_Page_Create3DAnnot(page, rect, false, false, u3d, NULL);
+        // but the libharu-dev package expects this
+        annot = HPDF_Page_Create3DAnnot(page, rect, u3d);
         if (!annot)
         {
             printf("error: cannot create annotation\n");
