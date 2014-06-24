@@ -1,5 +1,7 @@
 # PDAL PRC Plugin
 
+[![Build Status](https://travis-ci.org/PDAL/PRC.png?branch=master)](https://travis-ci.org/PDAL/PRC)
+
 The PDAL PRC Plugin is released as LGPL v3.
 
 Begin by installing the plugin's only required dependencies, PDAL (pointcloud.org) and Haru (libharu.org).
