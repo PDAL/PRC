@@ -1,6 +1,6 @@
 /******************************************************************************
 * This file is part of a tool for producing 3D content in the PRC format.
-* Copyright (c) 2013, Bradley J Chambers, brad.chambers@gmail.com
+* Copyright (c) 2013-2014, Bradley J Chambers, brad.chambers@gmail.com
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -23,6 +23,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <vector>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/erase.hpp>
@@ -38,6 +39,7 @@
 #include <pdal/StageFactory.hpp>
 
 #include <prc/oPRCFile.hpp>
+#include <prc/ColorQuantizer.hpp>
 
 MAKE_WRITER_CREATOR(prcWriter, pdal::drivers::prc::Writer)
 CREATE_WRITER_PLUGIN(prc, pdal::drivers::prc::Writer)
@@ -186,7 +188,7 @@ Options Writer::getDefaultOptions()
 }
 
 
-void Writer::writeBegin(boost::uint64_t /*targetNumPointsToWrite*/)
+void Writer::writeBegin(uint64_t /*targetNumPointsToWrite*/)
 {
     PRCoptions grpopt;
     grpopt.no_break = true;
@@ -199,7 +201,7 @@ void Writer::writeBegin(boost::uint64_t /*targetNumPointsToWrite*/)
 }
 
 
-void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
+void Writer::writeEnd(uint64_t /*actualNumPointsWritten*/)
 {
     m_prcFile.endgroup();
     m_prcFile.finish();
@@ -277,9 +279,9 @@ void Writer::writeEnd(boost::uint64_t /*actualNumPointsWritten*/)
     return;
 }
 
-boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
+uint32_t Writer::writeBuffer(const PointBuffer& data)
 {
-    boost::uint32_t numPoints = 0;
+    uint32_t numPoints = 0;
 
     m_bounds = data.getSpatialBounds();
     double zmin = m_bounds.getMinimum(2);
@@ -311,7 +313,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
         p6 = (double**) malloc(data.getNumPoints()*sizeof(double*));
         p7 = (double**) malloc(data.getNumPoints()*sizeof(double*));
         p8 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+        for (uint32_t i = 0; i < data.getNumPoints(); ++i)
         {
             p0[i] = (double*) malloc(3*sizeof(double));
             p1[i] = (double*) malloc(3*sizeof(double));
@@ -424,7 +426,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
         if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
         {
-            for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
             {
                 float x = data.getField<float>(dimX, i);
                 float y = data.getField<float>(dimY, i);
@@ -505,15 +507,15 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
         }
         else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
         {
-            for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
             {
-                boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
-                boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
-                boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+                int32_t x = data.getField<int32_t>(dimX, i);
+                int32_t y = data.getField<int32_t>(dimY, i);
+                int32_t z = data.getField<int32_t>(dimZ, i);
 
-                xd = dimX.applyScaling<boost::int32_t>(x) - cx;
-                yd = dimY.applyScaling<boost::int32_t>(y) - cy;
-                zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+                xd = dimX.applyScaling<int32_t>(x) - cx;
+                yd = dimY.applyScaling<int32_t>(y) - cy;
+                zd = dimZ.applyScaling<int32_t>(z) - cz;
 
                 //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
@@ -601,7 +603,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
         m_prcFile.addPoints(id7, const_cast<const double**>(p7), c7, 1.0);
         m_prcFile.addPoints(id8, const_cast<const double**>(p8), c8, 1.0);
 
-        for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+        for (uint32_t i = 0; i < data.getNumPoints(); ++i)
         {
             free(p0[i]);
             free(p1[i]);
@@ -635,51 +637,86 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
         if (bHaveColor)
         {
-            double **points;
-            points = (double**) malloc(sizeof(double*));
-            {
-                points[0] = (double*) malloc(3*sizeof(double));
-            }
+            uint16_t histogram[INT16_MAX] = {0};
 
             double xd(0.0);
             double yd(0.0);
             double zd(0.0);
 
-            for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+            for (uint32_t point = 0; point < data.getNumPoints(); ++point)
             {
-                boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
-                boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
-                boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
-
-                double r = static_cast<double>(data.getField<boost::uint16_t>(*dimR, i))/255.0;
-                double g = static_cast<double>(data.getField<boost::uint16_t>(*dimG, i))/255.0;
-                double b = static_cast<double>(data.getField<boost::uint16_t>(*dimB, i))/255.0;
-
-                xd = dimX.applyScaling<boost::int32_t>(x) - cx;
-                yd = dimY.applyScaling<boost::int32_t>(y) - cy;
-                zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
-
-                if (i % 10000 == 0) printf("point %f %f %f %f %f %f\n", xd, yd, zd, r, g, b);
-
-                points[0][0] = xd;
-                points[0][1] = yd;
-                points[0][2] = zd;
-
-                m_prcFile.addPoints(1, const_cast<const double**>(points), RGBAColour(r,g,b,1.0), 5.0);
-
-                numPoints++;
+                uint16_t r = data.getField<uint16_t>(*dimR, point);
+                uint16_t g = data.getField<uint16_t>(*dimG, point);
+                uint16_t b = data.getField<uint16_t>(*dimB, point);
+                uint16_t color = RGB(r, g, b);
+                histogram[color]++;
             }
 
+            byte colMap[256][3];
+            ColorQuantizer *colorQuantizer = new ColorQuantizer();
+            // is there any chance that this won't return 256 cubes? should we check?
+            word ncubes = colorQuantizer->medianCut(histogram, colMap, 256);
+
+            std::vector<std::vector<int> > indices;
+            indices.resize(256);
+
+            for (uint32_t point = 0; point < data.getNumPoints(); ++point)
             {
-                free(points[0]);
+                uint16_t r = data.getField<uint16_t>(*dimR, point);
+                uint16_t g = data.getField<uint16_t>(*dimG, point);
+                uint16_t b = data.getField<uint16_t>(*dimB, point);
+                uint16_t color = RGB(r, g, b);
+                uint16_t colorIndex = histogram[color];
+                indices[colorIndex].push_back(point);
             }
-            free(points);
+
+            for (uint32_t level = 0; level < 256; ++level)
+            {
+                int num_points = indices[level].size();
+
+                double **points;
+
+                // Allocate memory
+                points = new double*[num_points];
+                for (int point = 0; point < num_points; ++point)
+                {
+                    points[point] = new double[3];
+                    
+                    int idx = indices[level][point];
+
+                    int32_t x = data.getField<int32_t>(dimX, idx);
+                    int32_t y = data.getField<int32_t>(dimY, idx);
+                    int32_t z = data.getField<int32_t>(dimZ, idx);
+
+                    xd = dimX.applyScaling<int32_t>(x) - cx;
+                    yd = dimY.applyScaling<int32_t>(y) - cy;
+                    zd = dimZ.applyScaling<int32_t>(z) - cz;
+
+                    points[point][0] = xd;
+                    points[point][1] = yd;
+                    points[point][2] = zd;
+                    numPoints++;
+                }
+
+                double r = static_cast<double>((int)(colMap[level][0])/255.0);
+                double g = static_cast<double>((int)(colMap[level][1])/255.0);
+                double b = static_cast<double>((int)(colMap[level][2])/255.0);
+
+                m_prcFile.addPoints(num_points, const_cast<const double**>(points), RGBAColour(r, g, b, 1.0), 5.0);
+
+                // De-Allocate memory to prevent memory leak
+                for (int point = 0; point < num_points; ++point)
+                {
+                    delete [] points[point];
+                }
+                delete [] points;
+            }
         }
         else
         {
             double **points;
             points = (double**) malloc(data.getNumPoints()*sizeof(double*));
-            for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
             {
                 points[i] = (double*) malloc(3*sizeof(double));
             }
@@ -690,7 +727,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
             if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
             {
-                for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+                for (uint32_t i = 0; i < data.getNumPoints(); ++i)
                 {
                     float x = data.getField<float>(dimX, i);
                     float y = data.getField<float>(dimY, i);
@@ -709,15 +746,15 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
             }
             else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
             {
-                for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+                for (uint32_t i = 0; i < data.getNumPoints(); ++i)
                 {
-                    boost::int32_t x = data.getField<boost::int32_t>(dimX, i);
-                    boost::int32_t y = data.getField<boost::int32_t>(dimY, i);
-                    boost::int32_t z = data.getField<boost::int32_t>(dimZ, i);
+                    int32_t x = data.getField<int32_t>(dimX, i);
+                    int32_t y = data.getField<int32_t>(dimY, i);
+                    int32_t z = data.getField<int32_t>(dimZ, i);
 
-                    xd = dimX.applyScaling<boost::int32_t>(x) - cx;
-                    yd = dimY.applyScaling<boost::int32_t>(y) - cy;
-                    zd = dimZ.applyScaling<boost::int32_t>(z) - cz;
+                    xd = dimX.applyScaling<int32_t>(x) - cx;
+                    yd = dimY.applyScaling<int32_t>(y) - cy;
+                    zd = dimZ.applyScaling<int32_t>(z) - cz;
 
                     if (i % 10000 == 0) printf("small point %f %f %f\n", xd, yd, zd);
 
@@ -735,7 +772,7 @@ boost::uint32_t Writer::writeBuffer(const PointBuffer& data)
 
             m_prcFile.addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
 
-            for (boost::uint32_t i = 0; i < data.getNumPoints(); ++i)
+            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
             {
                 free(points[i]);
             }

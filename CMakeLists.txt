@@ -183,6 +183,7 @@ else(WIN32)
 endif(WIN32)
 
 set(PRC_HPP
+  include/prc/ColorQuantizer.hpp
   include/prc/PRC.hpp
   include/prc/PRCbitStream.hpp
   include/prc/PRCdouble.hpp
@@ -191,6 +192,7 @@ set(PRC_HPP
   include/prc/Writer.hpp)
 
 set(PRC_CPP
+  src/ColorQuantizer.cpp
   src/PRCbitStream.cpp
   src/PRCdouble.cpp
   src/oPRCFile.cpp
