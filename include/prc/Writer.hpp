@@ -56,7 +56,7 @@ PDAL_DLL void PDALRegister_writer_prc(void* factory);
 
 PDAL_C_END
 
-pdal::Writer* createPRCWriter(pdal::Stage& prevStage, const pdal::Options& options);
+pdal::Writer* createPRCWriter(const pdal::Options& options);
 
 class PDAL_DLL Writer : public pdal::Writer
 {
@@ -64,19 +64,21 @@ public:
     SET_STAGE_NAME("drivers.prc.writer", "PRC Writer")
     SET_STAGE_ENABLED(true)
 
-    Writer(Stage& prevStage, const Options&);
+    Writer(const Options&);
     ~Writer();
 
     virtual void initialize();
+    virtual void processOptions(const Options& options);
+    virtual void ready(PointContext ctx);
+    virtual void write(const PointBuffer& pointBuffer);
+    virtual void done(PointContext ctx);
+
     static Options getDefaultOptions();
 
 protected:
-    virtual void writeBegin(boost::uint64_t targetNumPointsToWrite);
-    virtual boost::uint32_t writeBuffer(const PointBuffer&);
-    virtual void writeEnd(boost::uint64_t actualNumPointsWritten);
 
-    oPRCFile m_prcFile;
-
+    std::unique_ptr<oPRCFile> m_prcFile;
+    std::string m_prcFilename;
     pdal::Bounds<double> m_bounds;
 
     int m_outputFormat;

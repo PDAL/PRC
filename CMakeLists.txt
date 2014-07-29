@@ -18,6 +18,10 @@ mark_as_advanced(CMAKE_VERBOSE_MAKEFILE)
 # Path to additional CMake modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/prc_utils.cmake)
+if (CMAKE_MAJOR_VERSION GREATER 2)
+cmake_policy(SET CMP0022 OLD) # interface link libraries
+cmake_policy(SET CMP0042 OLD) # osx rpath
+endif()
 
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
 
@@ -114,7 +118,7 @@ else()
   # -Weffc++
   set(PRC_COMMON_CXX_FLAGS
 	  #    "-pedantic -Wall -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Wredundant-decls -Wno-long-long -fPIC")
-    "-Wextra -Wall -Wno-unused-parameter -Wno-unused-variable -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Wredundant-decls -Wno-long-long -fPIC")
+    "-Wextra -Wall -Wno-unused-parameter -Wno-unused-variable -Wpointer-arith -Wcast-align -Wcast-qual -Wredundant-decls -Wno-long-long -fPIC")
 
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 

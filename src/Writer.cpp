@@ -72,9 +72,8 @@ namespace drivers
 namespace prc
 {
 
-Writer::Writer(Stage& prevStage, const Options& options)
-    : pdal::Writer(prevStage, options)
-    , m_prcFile(options.getOption("prc_filename").getValue<std::string>(),1000)
+Writer::Writer(const Options& options)
+    : pdal::Writer(options)
     , m_outputFormat(OUTPUT_FORMAT_PDF)
     , m_colorScheme(COLOR_SCHEME_SOLID)
     , m_contrastStretch(CONTRAST_STRETCH_LINEAR)
@@ -88,13 +87,10 @@ Writer::~Writer()
     return;
 }
 
-
-void Writer::initialize()
+void Writer::processOptions(const Options& options)
 {
-    pdal::Writer::initialize();
-
-    std::string output_format = getOptions().getValueOrDefault<std::string>("output_format", "pdf");
-
+    m_prcFilename = options.getValueOrThrow<std::string>("prc_filename");
+    std::string output_format = options.getValueOrDefault<std::string>("output_format", "pdf");
     if (boost::iequals(output_format, "pdf"))
         m_outputFormat = OUTPUT_FORMAT_PDF;
     else if (boost::iequals(output_format, "prc"))
@@ -106,8 +102,8 @@ void Writer::initialize()
         throw prc_driver_error("Unrecognized output format");
     }
 
-    std::string color_scheme = getOptions().getValueOrDefault<std::string>("color_scheme", "solid");
-    std::cout << color_scheme << " scheme\n";
+    std::string color_scheme = options.getValueOrDefault<std::string>("color_scheme", "solid");
+    log()->get(logDEBUG) << color_scheme << " scheme" << std::endl;
 
     if (boost::iequals(color_scheme, "solid"))
         m_colorScheme = COLOR_SCHEME_SOLID;
@@ -146,7 +142,11 @@ void Writer::initialize()
     m_roo = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("roo", 20.0f));
     m_roll = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("roll", 0.0f));
 
-    return;
+}
+
+void Writer::initialize()
+{
+    m_prcFile = std::unique_ptr<oPRCFile>(new oPRCFile(m_prcFilename,1000));
 }
 
 
@@ -188,23 +188,23 @@ Options Writer::getDefaultOptions()
 }
 
 
-void Writer::writeBegin(uint64_t /*targetNumPointsToWrite*/)
+void Writer::ready(PointContext ctx)
 {
     PRCoptions grpopt;
     grpopt.no_break = true;
     grpopt.do_break = false;
     grpopt.tess = true;
 
-    m_prcFile.begingroup("points",&grpopt);
+    m_prcFile->begingroup("points",&grpopt);
 
-    return;
 }
 
 
-void Writer::writeEnd(uint64_t /*actualNumPointsWritten*/)
+void Writer::done(PointContext ctx)
+
 {
-    m_prcFile.endgroup();
-    m_prcFile.finish();
+    m_prcFile->endgroup();
+    m_prcFile->finish();
 
     if (m_outputFormat == OUTPUT_FORMAT_PDF)
     {
@@ -279,11 +279,11 @@ void Writer::writeEnd(uint64_t /*actualNumPointsWritten*/)
     return;
 }
 
-uint32_t Writer::writeBuffer(const PointBuffer& data)
+void Writer::write(const PointBuffer& data)
 {
     uint32_t numPoints = 0;
 
-    m_bounds = data.getSpatialBounds();
+    m_bounds = data.calculateBounds();
     double zmin = m_bounds.getMinimum(2);
     double zmax = m_bounds.getMaximum(2);
     double cz2 = (zmax-zmin)/2+zmin;
@@ -304,16 +304,17 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
     if ((m_colorScheme == COLOR_SCHEME_ORANGES) || (m_colorScheme == COLOR_SCHEME_BLUE_GREEN))
     {
         double **p0, **p1, **p2, **p3, **p4, **p5, **p6, **p7, **p8;
-        p0 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p1 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p2 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p3 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p4 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p5 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p6 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p7 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        p8 = (double**) malloc(data.getNumPoints()*sizeof(double*));
-        for (uint32_t i = 0; i < data.getNumPoints(); ++i)
+        p0 = (double**) malloc(data.size()*sizeof(double*));
+        p1 = (double**) malloc(data.size()*sizeof(double*));
+        p2 = (double**) malloc(data.size()*sizeof(double*));
+        p3 = (double**) malloc(data.size()*sizeof(double*));
+        p4 = (double**) malloc(data.size()*sizeof(double*));
+        p5 = (double**) malloc(data.size()*sizeof(double*));
+        p6 = (double**) malloc(data.size()*sizeof(double*));
+        p7 = (double**) malloc(data.size()*sizeof(double*));
+        p8 = (double**) malloc(data.size()*sizeof(double*));
+
+        for (point_count_t i = 0; i < data.size(); ++i)
         {
             p0[i] = (double*) malloc(3*sizeof(double));
             p1[i] = (double*) malloc(3*sizeof(double));
@@ -424,186 +425,93 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
         int id0, id1, id2, id3, id4, id5, id6, id7, id8;
         id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = id8 = 0;
 
-        if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
+        for (point_count_t i = 0; i < data.size(); ++i)
         {
-            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
+            double dx = data.getFieldAs<double>(dimX, i);
+            double dy = data.getFieldAs<double>(dimY, i);
+            double dz = data.getFieldAs<double>(dimZ, i);
+            //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
+
+            if (zd < t0)
             {
-                float x = data.getField<float>(dimX, i);
-                float y = data.getField<float>(dimY, i);
-                float z = data.getField<float>(dimZ, i);
-
-                xd = dimX.applyScaling<float>(x) - cx;
-                yd = dimY.applyScaling<float>(y) - cy;
-                zd = dimZ.applyScaling<float>(z) - cz;
-
-                //      if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
-
-                if (zd < t0)
-                {
-                    p0[id0][0] = xd;
-                    p0[id0][1] = yd;
-                    p0[id0][2] = zd;
-                    id0++;
-                }
-                else if (zd < t1)
-                {
-                    p1[id1][0] = xd;
-                    p1[id1][1] = yd;
-                    p1[id1][2] = zd;
-                    id1++;
-                }
-                else if (zd < t2)
-                {
-                    p2[id2][0] = xd;
-                    p2[id2][1] = yd;
-                    p2[id2][2] = zd;
-                    id2++;
-                }
-                else if (zd < t3)
-                {
-                    p3[id3][0] = xd;
-                    p3[id3][1] = yd;
-                    p3[id3][2] = zd;
-                    id3++;
-                }
-                else if (zd < t4)
-                {
-                    p4[id4][0] = xd;
-                    p4[id4][1] = yd;
-                    p4[id4][2] = zd;
-                    id4++;
-                }
-                else if (zd < t5)
-                {
-                    p5[id5][0] = xd;
-                    p5[id5][1] = yd;
-                    p5[id5][2] = zd;
-                    id5++;
-                }
-                else if (zd < t6)
-                {
-                    p6[id6][0] = xd;
-                    p6[id6][1] = yd;
-                    p6[id6][2] = zd;
-                    id6++;
-                }
-                else if (zd < t7)
-                {
-                    p7[id7][0] = xd;
-                    p7[id7][1] = yd;
-                    p7[id7][2] = zd;
-                    id7++;
-                }
-                else
-                {
-                    p8[id8][0] = xd;
-                    p8[id8][1] = yd;
-                    p8[id8][2] = zd;
-                    id8++;
-                }
-
-                numPoints++;
+                p0[id0][0] = xd;
+                p0[id0][1] = yd;
+                p0[id0][2] = zd;
+                id0++;
             }
-        }
-        else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
-        {
-            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
+            else if (zd < t1)
             {
-                int32_t x = data.getField<int32_t>(dimX, i);
-                int32_t y = data.getField<int32_t>(dimY, i);
-                int32_t z = data.getField<int32_t>(dimZ, i);
-
-                xd = dimX.applyScaling<int32_t>(x) - cx;
-                yd = dimY.applyScaling<int32_t>(y) - cy;
-                zd = dimZ.applyScaling<int32_t>(z) - cz;
-
-                //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
-
-                if (zd < t0)
-                {
-                    p0[id0][0] = xd;
-                    p0[id0][1] = yd;
-                    p0[id0][2] = zd;
-                    id0++;
-                }
-                else if (zd < t1)
-                {
-                    p1[id1][0] = xd;
-                    p1[id1][1] = yd;
-                    p1[id1][2] = zd;
-                    id1++;
-                }
-                else if (zd < t2)
-                {
-                    p2[id2][0] = xd;
-                    p2[id2][1] = yd;
-                    p2[id2][2] = zd;
-                    id2++;
-                }
-                else if (zd < t3)
-                {
-                    p3[id3][0] = xd;
-                    p3[id3][1] = yd;
-                    p3[id3][2] = zd;
-                    id3++;
-                }
-                else if (zd < t4)
-                {
-                    p4[id4][0] = xd;
-                    p4[id4][1] = yd;
-                    p4[id4][2] = zd;
-                    id4++;
-                }
-                else if (zd < t5)
-                {
-                    p5[id5][0] = xd;
-                    p5[id5][1] = yd;
-                    p5[id5][2] = zd;
-                    id5++;
-                }
-                else if (zd < t6)
-                {
-                    p6[id6][0] = xd;
-                    p6[id6][1] = yd;
-                    p6[id6][2] = zd;
-                    id6++;
-                }
-                else if (zd < t7)
-                {
-                    p7[id7][0] = xd;
-                    p7[id7][1] = yd;
-                    p7[id7][2] = zd;
-                    id7++;
-                }
-                else
-                {
-                    p8[id8][0] = xd;
-                    p8[id8][1] = yd;
-                    p8[id8][2] = zd;
-                    id8++;
-                }
-
-                numPoints++;
+                p1[id1][0] = xd;
+                p1[id1][1] = yd;
+                p1[id1][2] = zd;
+                id1++;
             }
-        }
-        else
-        {
-            std::cerr << "didn't detect a suitable dimension interpretation\n";
+            else if (zd < t2)
+            {
+                p2[id2][0] = xd;
+                p2[id2][1] = yd;
+                p2[id2][2] = zd;
+                id2++;
+            }
+            else if (zd < t3)
+            {
+                p3[id3][0] = xd;
+                p3[id3][1] = yd;
+                p3[id3][2] = zd;
+                id3++;
+            }
+            else if (zd < t4)
+            {
+                p4[id4][0] = xd;
+                p4[id4][1] = yd;
+                p4[id4][2] = zd;
+                id4++;
+            }
+            else if (zd < t5)
+            {
+                p5[id5][0] = xd;
+                p5[id5][1] = yd;
+                p5[id5][2] = zd;
+                id5++;
+            }
+            else if (zd < t6)
+            {
+                p6[id6][0] = xd;
+                p6[id6][1] = yd;
+                p6[id6][2] = zd;
+                id6++;
+            }
+            else if (zd < t7)
+            {
+                p7[id7][0] = xd;
+                p7[id7][1] = yd;
+                p7[id7][2] = zd;
+                id7++;
+            }
+            else
+            {
+                p8[id8][0] = xd;
+                p8[id8][1] = yd;
+                p8[id8][2] = zd;
+                id8++;
+            }
+
+            numPoints++;
         }
 
         printf("%d %d %d %d %d %d %d %d %d\n", id0, id1, id2, id3, id4, id5, id6, id7, id8);
 
-        m_prcFile.addPoints(id0, const_cast<const double**>(p0), c0, 1.0);
-        m_prcFile.addPoints(id1, const_cast<const double**>(p1), c1, 1.0);
-        m_prcFile.addPoints(id2, const_cast<const double**>(p2), c2, 1.0);
-        m_prcFile.addPoints(id3, const_cast<const double**>(p3), c3, 1.0);
-        m_prcFile.addPoints(id4, const_cast<const double**>(p4), c4, 1.0);
-        m_prcFile.addPoints(id5, const_cast<const double**>(p5), c5, 1.0);
-        m_prcFile.addPoints(id6, const_cast<const double**>(p6), c6, 1.0);
-        m_prcFile.addPoints(id7, const_cast<const double**>(p7), c7, 1.0);
-        m_prcFile.addPoints(id8, const_cast<const double**>(p8), c8, 1.0);
+        m_prcFile->addPoints(id0, const_cast<const double**>(p0), c0, 1.0);
+        m_prcFile->addPoints(id1, const_cast<const double**>(p1), c1, 1.0);
+        m_prcFile->addPoints(id2, const_cast<const double**>(p2), c2, 1.0);
+        m_prcFile->addPoints(id3, const_cast<const double**>(p3), c3, 1.0);
+        m_prcFile->addPoints(id4, const_cast<const double**>(p4), c4, 1.0);
+        m_prcFile->addPoints(id5, const_cast<const double**>(p5), c5, 1.0);
+        m_prcFile->addPoints(id6, const_cast<const double**>(p6), c6, 1.0);
+        m_prcFile->addPoints(id7, const_cast<const double**>(p7), c7, 1.0);
+        m_prcFile->addPoints(id8, const_cast<const double**>(p8), c8, 1.0);
 
-        for (uint32_t i = 0; i < data.getNumPoints(); ++i)
+        for (point_count_t i = 0; i < data.size(); ++i)
         {
             free(p0[i]);
             free(p1[i]);
@@ -643,7 +551,7 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
             double yd(0.0);
             double zd(0.0);
 
-            for (uint32_t point = 0; point < data.getNumPoints(); ++point)
+            for (point_count_t point = 0; point < data.size(); ++point)
             {
                 uint16_t r = data.getField<uint16_t>(*dimR, point);
                 uint16_t g = data.getField<uint16_t>(*dimG, point);
@@ -660,7 +568,7 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
             std::vector<std::vector<int> > indices;
             indices.resize(256);
 
-            for (uint32_t point = 0; point < data.getNumPoints(); ++point)
+            for (point_count_t point = 0; point < data.size(); ++point)
             {
                 uint16_t r = data.getField<uint16_t>(*dimR, point);
                 uint16_t g = data.getField<uint16_t>(*dimG, point);
@@ -684,13 +592,9 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
                     
                     int idx = indices[level][point];
 
-                    int32_t x = data.getField<int32_t>(dimX, idx);
-                    int32_t y = data.getField<int32_t>(dimY, idx);
-                    int32_t z = data.getField<int32_t>(dimZ, idx);
-
-                    xd = dimX.applyScaling<int32_t>(x) - cx;
-                    yd = dimY.applyScaling<int32_t>(y) - cy;
-                    zd = dimZ.applyScaling<int32_t>(z) - cz;
+                    xd = data.getFieldAs<double>(dimX, idx);
+                    yd = data.getFieldAs<double>(dimY, idx);
+                    zd = data.getFieldAs<double>(dimZ, idx);
 
                     points[point][0] = xd;
                     points[point][1] = yd;
@@ -702,7 +606,7 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
                 double g = static_cast<double>((int)(colMap[level][1])/255.0);
                 double b = static_cast<double>((int)(colMap[level][2])/255.0);
 
-                m_prcFile.addPoints(num_points, const_cast<const double**>(points), RGBAColour(r, g, b, 1.0), 5.0);
+                m_prcFile->addPoints(num_points, const_cast<const double**>(points), RGBAColour(r, g, b, 1.0), 5.0);
 
                 // De-Allocate memory to prevent memory leak
                 for (int point = 0; point < num_points; ++point)
@@ -715,8 +619,8 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
         else
         {
             double **points;
-            points = (double**) malloc(data.getNumPoints()*sizeof(double*));
-            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
+            points = (double**) malloc(data.size()*sizeof(double*));
+            for (point_count_t i = 0; i < data.size(); ++i)
             {
                 points[i] = (double*) malloc(3*sizeof(double));
             }
@@ -725,54 +629,24 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
             double yd(0.0);
             double zd(0.0);
 
-            if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::Float)
+            for (point_count_t i = 0; i < data.size(); ++i)
             {
-                for (uint32_t i = 0; i < data.getNumPoints(); ++i)
-                {
-                    float x = data.getField<float>(dimX, i);
-                    float y = data.getField<float>(dimY, i);
-                    float z = data.getField<float>(dimZ, i);
+                xd = data.getFieldAs<double>(dimX, i);
+                yd = data.getFieldAs<double>(dimY, i);
+                zd = data.getFieldAs<double>(dimZ, i);
 
-                    xd = dimX.applyScaling<float>(x) - cx;
-                    yd = dimY.applyScaling<float>(y) - cy;
-                    zd = dimZ.applyScaling<float>(z) - cz;
+                if (i % 10000 == 0) printf("small point %f %f %f\n", xd, yd, zd);
 
-                    points[i][0] = xd;
-                    points[i][1] = yd;
-                    points[i][2] = zd;
+                points[i][0] = xd;
+                points[i][1] = yd;
+                points[i][2] = zd;
 
-                    numPoints++;
-                }
-            }
-            else if (dimX.getByteSize() == 4 && dimX.getInterpretation() == pdal::dimension::SignedInteger)
-            {
-                for (uint32_t i = 0; i < data.getNumPoints(); ++i)
-                {
-                    int32_t x = data.getField<int32_t>(dimX, i);
-                    int32_t y = data.getField<int32_t>(dimY, i);
-                    int32_t z = data.getField<int32_t>(dimZ, i);
-
-                    xd = dimX.applyScaling<int32_t>(x) - cx;
-                    yd = dimY.applyScaling<int32_t>(y) - cy;
-                    zd = dimZ.applyScaling<int32_t>(z) - cz;
-
-                    if (i % 10000 == 0) printf("small point %f %f %f\n", xd, yd, zd);
-
-                    points[i][0] = xd;
-                    points[i][1] = yd;
-                    points[i][2] = zd;
-
-                    numPoints++;
-                }
-            }
-            else
-            {
-                std::cerr << "didn't detect a suitable dimension interpretation\n";
+                numPoints++;
             }
 
-            m_prcFile.addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
+            m_prcFile->addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
 
-            for (uint32_t i = 0; i < data.getNumPoints(); ++i)
+            for (point_count_t i = 0; i < data.size(); ++i)
             {
                 free(points[i]);
             }
@@ -780,7 +654,6 @@ uint32_t Writer::writeBuffer(const PointBuffer& data)
         }
     }
 
-    return numPoints;
 }
 
 }

@@ -1,2 +1,8 @@
 build
-test/temp
+CMakeFiles
+*.dylib
+*.so
+cmake_install.cmake
+Makefile
+CMakeCache.txt
+temp/
