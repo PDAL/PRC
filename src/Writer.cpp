@@ -426,9 +426,9 @@ void Writer::write(const PointBuffer& data)
 
         for (point_count_t i = 0; i < data.size(); ++i)
         {
-            double dx = data.getFieldAs<double>(dimX, i) - cx;
-            double dy = data.getFieldAs<double>(dimY, i) - cy;
-            double dz = data.getFieldAs<double>(dimZ, i) - cz;
+            double xd = data.getFieldAs<double>(dimX, i) - cx;
+            double yd = data.getFieldAs<double>(dimY, i) - cy;
+            double zd = data.getFieldAs<double>(dimZ, i) - cz;
             //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
             if (zd < t0)
