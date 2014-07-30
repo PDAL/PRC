@@ -27,6 +27,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/erase.hpp>
+#include <boost/format.hpp>
 
 #include <hpdf.h>
 #include <hpdf_u3d.h>
@@ -119,7 +120,7 @@ void Writer::processOptions(const Options& options)
     }
 
     std::string contrast_stretch = getOptions().getValueOrDefault<std::string>("contrast_stretch", "linear");
-    std::cout << contrast_stretch << " stretch\n";
+    log()->get(logDEBUG) << contrast_stretch << " stretch" << std::endl;
 
     if (boost::iequals(contrast_stretch, "linear"))
         m_contrastStretch = CONTRAST_STRETCH_LINEAR;
@@ -222,8 +223,8 @@ void Writer::done(PointContext ctx)
         pdf = HPDF_New(NULL, NULL);
         if (!pdf)
         {
-            printf("error: cannot create PdfDoc object\n");
-            return;
+            throw pdal_error("Cannot create PdfDoc object!");
+
         }
         pdf->pdf_version = HPDF_VER_17;
 
@@ -232,22 +233,21 @@ void Writer::done(PointContext ctx)
         HPDF_Page_SetHeight(page, height);
 
         std::string prcFilename = getOptions().getValueOrThrow<std::string>("prc_filename");
-        printf("%s\n", prcFilename.c_str());
+        log()->get(logDEBUG) << "prcFilename: " << prcFilename << std::endl;
+
         u3d = HPDF_LoadU3DFromFile(pdf, prcFilename.c_str());
         if (!u3d)
         {
-            printf("error: cannot load U3D object\n");
-            return;
+            throw pdal_error("cannot load U3D object!");
         }
 
         view = HPDF_Create3DView(u3d->mmgr, "DefaultView");
         if (!view)
         {
-            printf("error: cannot create view\n");
-            return;
+            throw pdal_error("cannot create DefaultView!");
         }
 
-        printf("camera %f %f %f %f %f %f %f %f\n", m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
+        log()->get(logDEBUG) << boost::format("camera %f %f %f %f %f %f %f %f") % m_coox % m_cooy % m_cooz % m_c2cx % m_c2cy % m_c2cz % m_roo % m_roll << std::endl ;
 
         HPDF_3DView_SetCamera(view, m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
         HPDF_3DView_SetPerspectiveProjection(view, 30.0);
@@ -263,8 +263,7 @@ void Writer::done(PointContext ctx)
         annot = HPDF_Page_Create3DAnnot(page, rect, u3d);
         if (!annot)
         {
-            printf("error: cannot create annotation\n");
-            return;
+            throw pdal_error("cannot create annotation!");
         }
 
         //HPDF_Dict action = (HPDF_Dict) HPDF_Dict_GetItem( annot, "3DA", HPDF_OCLASS_DICT );
@@ -289,7 +288,7 @@ void Writer::write(const PointBuffer& data)
     double cz2 = (zmax-zmin)/2+zmin;
     HPDF_REAL cooz = static_cast<HPDF_REAL>(cz2);
 
-    printf("cz: %f, min: %f, max: %f, cooz: %f\n", cz2, zmin, zmax, cooz);
+    log()->get(logDEBUG) << boost::format("cz: %f, min: %f, max: %f, cooz: %f") % cz2 % zmin % zmax % cooz << std::endl ;
 
     double cx = (m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2+m_bounds.getMinimum(0);
     double cy = (m_bounds.getMaximum(1)-m_bounds.getMinimum(1))/2+m_bounds.getMinimum(1);
@@ -358,7 +357,7 @@ void Writer::write(const PointBuffer& data)
             c0.Set(127.0/255.0,  39.0/255.0,   4.0/255.0);
         }
 
-        double range, step, t0, t1, t2, t3, t4, t5, t6, t7;
+        double range(0.0), step(0.0), t0(0.0), t1(0.0), t2(0.0), t3(0.0), t4(0.0), t5(0.0), t6(0.0), t7(0.0);
 
         if (m_contrastStretch == CONTRAST_STRETCH_SQRT)
         {
@@ -386,7 +385,7 @@ void Writer::write(const PointBuffer& data)
         {
             range = m_bounds.getMaximum(2) - m_bounds.getMinimum(2);
             double twoper = range * 0.02;
-            std::cout << twoper << std::endl;
+            log()->get(logDEBUG) << twoper << std::endl;
             step = (range - 2 * twoper) / 7;
             t0 = m_bounds.getMinimum(2) + twoper;
             t1 = m_bounds.getMinimum(2) + twoper + 1 * step;
@@ -411,7 +410,7 @@ void Writer::write(const PointBuffer& data)
             t7 = m_bounds.getMinimum(2) + 8 * step;
         }
 
-        printf("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", range, step, t0, t1, t2, t3, t4, t5, t6, t7);
+        log()->get(logDEBUG) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl ;
         t0 -= cz;
         t1 -= cz;
         t2 -= cz;
@@ -420,7 +419,7 @@ void Writer::write(const PointBuffer& data)
         t5 -= cz;
         t6 -= cz;
         t7 -= cz;
-        printf("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", range, step, t0, t1, t2, t3, t4, t5, t6, t7);
+        log()->get(logDEBUG) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl;
 
         int id0, id1, id2, id3, id4, id5, id6, id7, id8;
         id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = id8 = 0;
@@ -499,7 +498,7 @@ void Writer::write(const PointBuffer& data)
             numPoints++;
         }
 
-        printf("%d %d %d %d %d %d %d %d %d\n", id0, id1, id2, id3, id4, id5, id6, id7, id8);
+        log()->get(logDEBUG) << boost::format("ids: %d %d %d %d %d %d %d %d %d")  % id0 % id1 % id2 % id3 % id4 % id5 % id6 % id7 % id8 ;
 
         m_prcFile->addPoints(id0, const_cast<const double**>(p0), c0, 1.0);
         m_prcFile->addPoints(id1, const_cast<const double**>(p1), c1, 1.0);
@@ -635,8 +634,10 @@ void Writer::write(const PointBuffer& data)
                 yd = data.getFieldAs<double>(dimY, i) - cy;
                 zd = data.getFieldAs<double>(dimZ, i) - cz;
 
-                if (i % 10000 == 0) printf("small point %f %f %f\n", xd, yd, zd);
-
+                if (i % 10000 == 0) 
+                {
+                    log()->get(logDEBUG) << boost::format("small point %f %f %f")  % xd % yd % zd ;
+                }
                 points[i][0] = xd;
                 points[i][1] = yd;
                 points[i][2] = zd;

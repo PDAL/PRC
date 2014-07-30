@@ -4,6 +4,9 @@
     <Option name="pdf_filename">
 	    ./temp/out.pdf
     </Option>
+    <Option name="plugin">
+	    ./libpdal_plugin_writer_prc.dylib
+    </Option>    
     <Option name="prc_filename">
 	    ./temp/out.prc
     </Option>
@@ -18,7 +21,7 @@
     </Option>
       <Reader type="drivers.las.reader">
         <Option name="filename">
-          /Users/bchambers/data/libLAS_sample_data/Serpent Mound Model LAS Data.las
+          ../Serpent Mound Model LAS Data.laz
         </Option>
       </Reader>
   </Writer>
