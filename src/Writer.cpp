@@ -427,9 +427,9 @@ void Writer::write(const PointBuffer& data)
 
         for (point_count_t i = 0; i < data.size(); ++i)
         {
-            double dx = data.getFieldAs<double>(dimX, i);
-            double dy = data.getFieldAs<double>(dimY, i);
-            double dz = data.getFieldAs<double>(dimZ, i);
+            double dx = data.getFieldAs<double>(dimX, i) - cx;
+            double dy = data.getFieldAs<double>(dimY, i) - cy;
+            double dz = data.getFieldAs<double>(dimZ, i) - cz;
             //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
             if (zd < t0)
@@ -592,9 +592,9 @@ void Writer::write(const PointBuffer& data)
                     
                     int idx = indices[level][point];
 
-                    xd = data.getFieldAs<double>(dimX, idx);
-                    yd = data.getFieldAs<double>(dimY, idx);
-                    zd = data.getFieldAs<double>(dimZ, idx);
+                    xd = data.getFieldAs<double>(dimX, idx) - cx;
+                    yd = data.getFieldAs<double>(dimY, idx) - cy;
+                    zd = data.getFieldAs<double>(dimZ, idx) - cz;
 
                     points[point][0] = xd;
                     points[point][1] = yd;
@@ -631,9 +631,9 @@ void Writer::write(const PointBuffer& data)
 
             for (point_count_t i = 0; i < data.size(); ++i)
             {
-                xd = data.getFieldAs<double>(dimX, i);
-                yd = data.getFieldAs<double>(dimY, i);
-                zd = data.getFieldAs<double>(dimZ, i);
+                xd = data.getFieldAs<double>(dimX, i) - cx;
+                yd = data.getFieldAs<double>(dimY, i) - cy;
+                zd = data.getFieldAs<double>(dimZ, i) - cz;
 
                 if (i % 10000 == 0) printf("small point %f %f %f\n", xd, yd, zd);
 
