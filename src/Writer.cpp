@@ -34,7 +34,6 @@
 #include <hpdf_annotation.h>
 
 #include <pdal/Dimension.hpp>
-#include <pdal/Schema.hpp>
 #include <pdal/PointBuffer.hpp>
 #include <pdal/pdal_macros.hpp>
 #include <pdal/StageFactory.hpp>
@@ -104,7 +103,7 @@ void Writer::processOptions(const Options& options)
     }
 
     std::string color_scheme = options.getValueOrDefault<std::string>("color_scheme", "solid");
-    log()->get(logDEBUG) << color_scheme << " scheme" << std::endl;
+    log()->get(LogLevel::DEBUG) << color_scheme << " scheme" << std::endl;
 
     if (boost::iequals(color_scheme, "solid"))
         m_colorScheme = COLOR_SCHEME_SOLID;
@@ -120,7 +119,7 @@ void Writer::processOptions(const Options& options)
     }
 
     std::string contrast_stretch = getOptions().getValueOrDefault<std::string>("contrast_stretch", "linear");
-    log()->get(logDEBUG) << contrast_stretch << " stretch" << std::endl;
+    log()->get(LogLevel::DEBUG) << contrast_stretch << " stretch" << std::endl;
 
     if (boost::iequals(contrast_stretch, "linear"))
         m_contrastStretch = CONTRAST_STRETCH_LINEAR;
@@ -233,7 +232,7 @@ void Writer::done(PointContext ctx)
         HPDF_Page_SetHeight(page, height);
 
         std::string prcFilename = getOptions().getValueOrThrow<std::string>("prc_filename");
-        log()->get(logDEBUG) << "prcFilename: " << prcFilename << std::endl;
+        log()->get(LogLevel::DEBUG) << "prcFilename: " << prcFilename << std::endl;
 
         u3d = HPDF_LoadU3DFromFile(pdf, prcFilename.c_str());
         if (!u3d)
@@ -247,7 +246,7 @@ void Writer::done(PointContext ctx)
             throw pdal_error("cannot create DefaultView!");
         }
 
-        log()->get(logDEBUG) << boost::format("camera %f %f %f %f %f %f %f %f") % m_coox % m_cooy % m_cooz % m_c2cx % m_c2cy % m_c2cz % m_roo % m_roll << std::endl ;
+        log()->get(LogLevel::DEBUG) << boost::format("camera %f %f %f %f %f %f %f %f") % m_coox % m_cooy % m_cooz % m_c2cx % m_c2cy % m_c2cz % m_roo % m_roll << std::endl ;
 
         HPDF_3DView_SetCamera(view, m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
         HPDF_3DView_SetPerspectiveProjection(view, 30.0);
@@ -288,17 +287,12 @@ void Writer::write(const PointBuffer& data)
     double cz2 = (zmax-zmin)/2+zmin;
     HPDF_REAL cooz = static_cast<HPDF_REAL>(cz2);
 
-    log()->get(logDEBUG) << boost::format("cz: %f, min: %f, max: %f, cooz: %f") % cz2 % zmin % zmax % cooz << std::endl ;
+    log()->get(LogLevel::DEBUG) << boost::format("cz: %f, min: %f, max: %f, cooz: %f") % cz2 % zmin % zmax % cooz << std::endl ;
 
     double cx = (m_bounds.getMaximum(0)-m_bounds.getMinimum(0))/2+m_bounds.getMinimum(0);
     double cy = (m_bounds.getMaximum(1)-m_bounds.getMinimum(1))/2+m_bounds.getMinimum(1);
     double cz = (m_bounds.getMaximum(2)-m_bounds.getMinimum(2))/2+m_bounds.getMinimum(2);
 
-    pdal::Schema const& schema = data.getSchema();
-
-    pdal::Dimension const& dimX = schema.getDimension("X");
-    pdal::Dimension const& dimY = schema.getDimension("Y");
-    pdal::Dimension const& dimZ = schema.getDimension("Z");
 
     if ((m_colorScheme == COLOR_SCHEME_ORANGES) || (m_colorScheme == COLOR_SCHEME_BLUE_GREEN))
     {
@@ -385,7 +379,7 @@ void Writer::write(const PointBuffer& data)
         {
             range = m_bounds.getMaximum(2) - m_bounds.getMinimum(2);
             double twoper = range * 0.02;
-            log()->get(logDEBUG) << twoper << std::endl;
+            log()->get(LogLevel::DEBUG) << twoper << std::endl;
             step = (range - 2 * twoper) / 7;
             t0 = m_bounds.getMinimum(2) + twoper;
             t1 = m_bounds.getMinimum(2) + twoper + 1 * step;
@@ -410,7 +404,7 @@ void Writer::write(const PointBuffer& data)
             t7 = m_bounds.getMinimum(2) + 8 * step;
         }
 
-        log()->get(logDEBUG) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl ;
+        log()->get(LogLevel::DEBUG) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl ;
         t0 -= cz;
         t1 -= cz;
         t2 -= cz;
@@ -419,16 +413,16 @@ void Writer::write(const PointBuffer& data)
         t5 -= cz;
         t6 -= cz;
         t7 -= cz;
-        log()->get(logDEBUG) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl;
+        log()->get(LogLevel::DEBUG) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl;
 
         int id0, id1, id2, id3, id4, id5, id6, id7, id8;
         id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = id8 = 0;
 
         for (point_count_t i = 0; i < data.size(); ++i)
         {
-            double xd = data.getFieldAs<double>(dimX, i) - cx;
-            double yd = data.getFieldAs<double>(dimY, i) - cy;
-            double zd = data.getFieldAs<double>(dimZ, i) - cz;
+            double xd = data.getFieldAs<double>(pdal::Dimension::Id::X, i) - cx;
+            double yd = data.getFieldAs<double>(pdal::Dimension::Id::Y, i) - cy;
+            double zd = data.getFieldAs<double>(pdal::Dimension::Id::Z, i) - cz;
             //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
             if (zd < t0)
@@ -498,7 +492,7 @@ void Writer::write(const PointBuffer& data)
             numPoints++;
         }
 
-        log()->get(logDEBUG) << boost::format("ids: %d %d %d %d %d %d %d %d %d")  % id0 % id1 % id2 % id3 % id4 % id5 % id6 % id7 % id8 ;
+        log()->get(LogLevel::DEBUG) << boost::format("ids: %d %d %d %d %d %d %d %d %d")  % id0 % id1 % id2 % id3 % id4 % id5 % id6 % id7 % id8 ;
 
         m_prcFile->addPoints(id0, const_cast<const double**>(p0), c0, 1.0);
         m_prcFile->addPoints(id1, const_cast<const double**>(p1), c1, 1.0);
@@ -534,12 +528,11 @@ void Writer::write(const PointBuffer& data)
     }
     else
     {
-        boost::optional<pdal::Dimension const&> dimR = schema.getDimensionOptional("Red");
-        boost::optional<pdal::Dimension const&> dimG = schema.getDimensionOptional("Green");
-        boost::optional<pdal::Dimension const&> dimB = schema.getDimensionOptional("Blue");
 
         bool bHaveColor(false);
-        if (dimR && dimG && dimB)
+        if (data.context().hasDim(pdal::Dimension::Id::Red) && 
+            data.context().hasDim(pdal::Dimension::Id::Green) && 
+            data.context().hasDim(pdal::Dimension::Id::Blue))
             bHaveColor = true;
 
         if (bHaveColor)
@@ -552,9 +545,9 @@ void Writer::write(const PointBuffer& data)
 
             for (point_count_t point = 0; point < data.size(); ++point)
             {
-                uint16_t r = data.getField<uint16_t>(*dimR, point);
-                uint16_t g = data.getField<uint16_t>(*dimG, point);
-                uint16_t b = data.getField<uint16_t>(*dimB, point);
+                uint16_t r = data.getFieldAs<uint16_t>(pdal::Dimension::Id::Red, point);
+                uint16_t g = data.getFieldAs<uint16_t>(pdal::Dimension::Id::Green, point);
+                uint16_t b = data.getFieldAs<uint16_t>(pdal::Dimension::Id::Blue, point);
                 uint16_t color = RGB(r, g, b);
                 histogram[color]++;
             }
@@ -569,9 +562,9 @@ void Writer::write(const PointBuffer& data)
 
             for (point_count_t point = 0; point < data.size(); ++point)
             {
-                uint16_t r = data.getField<uint16_t>(*dimR, point);
-                uint16_t g = data.getField<uint16_t>(*dimG, point);
-                uint16_t b = data.getField<uint16_t>(*dimB, point);
+                uint16_t r = data.getFieldAs<uint16_t>(pdal::Dimension::Id::Red, point);
+                uint16_t g = data.getFieldAs<uint16_t>(pdal::Dimension::Id::Green, point);
+                uint16_t b = data.getFieldAs<uint16_t>(pdal::Dimension::Id::Blue, point);
                 uint16_t color = RGB(r, g, b);
                 uint16_t colorIndex = histogram[color];
                 indices[colorIndex].push_back(point);
@@ -591,9 +584,9 @@ void Writer::write(const PointBuffer& data)
                     
                     int idx = indices[level][point];
 
-                    xd = data.getFieldAs<double>(dimX, idx) - cx;
-                    yd = data.getFieldAs<double>(dimY, idx) - cy;
-                    zd = data.getFieldAs<double>(dimZ, idx) - cz;
+                    xd = data.getFieldAs<double>(pdal::Dimension::Id::X, idx) - cx;
+                    yd = data.getFieldAs<double>(pdal::Dimension::Id::Y, idx) - cy;
+                    zd = data.getFieldAs<double>(pdal::Dimension::Id::Z, idx) - cz;
 
                     points[point][0] = xd;
                     points[point][1] = yd;
@@ -630,13 +623,13 @@ void Writer::write(const PointBuffer& data)
 
             for (point_count_t i = 0; i < data.size(); ++i)
             {
-                xd = data.getFieldAs<double>(dimX, i) - cx;
-                yd = data.getFieldAs<double>(dimY, i) - cy;
-                zd = data.getFieldAs<double>(dimZ, i) - cz;
+                xd = data.getFieldAs<double>(pdal::Dimension::Id::X, i) - cx;
+                yd = data.getFieldAs<double>(pdal::Dimension::Id::Y, i) - cy;
+                zd = data.getFieldAs<double>(pdal::Dimension::Id::Z, i) - cz;
 
                 if (i % 10000 == 0) 
                 {
-                    log()->get(logDEBUG) << boost::format("small point %f %f %f")  % xd % yd % zd ;
+                    log()->get(LogLevel::DEBUG) << boost::format("small point %f %f %f")  % xd % yd % zd ;
                 }
                 points[i][0] = xd;
                 points[i][1] = yd;
