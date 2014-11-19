@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Pipeline version="1.0">
+  <Writer type="drivers.prc.writer">
+    <Option name="pdf_filename">
+	    out.pdf
+    </Option>
+    <Option name="prc_filename">
+	    out.prc
+    </Option>
+    <Option name="output_format">
+      pdf
+    </Option>
+        <Filter type="filters.decimation">
+          <Option name="step">64</Option>
+          <Reader type="drivers.las.reader">
+            <Option name="filename">
+		    data/autzen-thin.las
+            </Option>
+          </Reader>
+        </Filter>
+  </Writer>
+</Pipeline>

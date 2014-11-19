@@ -2,18 +2,18 @@
 <Pipeline version="1.0">
   <Writer type="drivers.prc.writer">
     <Option name="pdf_filename">
-	    temp/MtStHelens.pdf
+	    out.pdf
     </Option>
     <Option name="prc_filename">
-	    temp/MtStHelens.prc
+	    out.prc
     </Option>
     <Option name="output_format">
       pdf
     </Option>
-    <Reader type="drivers.las.reader">
-      <Option name="filename">
-        /Users/bchambers/data/libLAS_sample_data/MtStHelens.laz
-      </Option>
-    </Reader>
+      <Reader type="drivers.las.reader">
+        <Option name="filename">
+		./data/autzen-thin.las
+        </Option>
+      </Reader>
   </Writer>
 </Pipeline>
