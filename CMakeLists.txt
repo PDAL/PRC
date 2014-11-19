@@ -193,7 +193,7 @@ set(PRC_HPP
   include/prc/PRCdouble.hpp
   include/prc/oPRCFile.hpp
   include/prc/writePRC.hpp
-  include/prc/Writer.hpp)
+  include/prc/PrcWriter.hpp)
 
 set(PRC_CPP
   src/ColorQuantizer.cpp
@@ -201,7 +201,7 @@ set(PRC_CPP
   src/PRCdouble.cpp
   src/oPRCFile.cpp
   src/writePRC.cpp
-  src/Writer.cpp)
+  src/PrcWriter.cpp)
 
 set(PRC_SOURCES
   ${PRC_HPP}

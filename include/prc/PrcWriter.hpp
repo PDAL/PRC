@@ -27,6 +27,7 @@
 
 #include <prc/oPRCFile.hpp>
 
+#include <pdal/pdal_export.hpp>
 #include <pdal/pdal_internal.hpp>
 #include <pdal/Bounds.hpp>
 #include <pdal/Writer.hpp>
@@ -50,36 +51,34 @@ public:
     {}
 };
 
-PDAL_C_START
+//PDAL_C_START
 
-PDAL_DLL void PDALRegister_writer_prc(void* factory);
+//PDAL_DLL void PDALRegister_writer_prc(void* factory);
 
-PDAL_C_END
+//PDAL_C_END
 
-pdal::Writer* createPRCWriter(const pdal::Options& options);
+//pdal::Writer* createPRCWriter(const pdal::Options& options);
 
-class PDAL_DLL Writer : public pdal::Writer
+class PDAL_DLL PrcWriter : public pdal::Writer
 {
 public:
     SET_STAGE_NAME("drivers.prc.writer", "PRC Writer")
     SET_STAGE_ENABLED(true)
 
-    Writer(const Options&);
-    ~Writer();
+    PrcWriter();
 
+    static Options getDefaultOptions();
+
+protected:
     virtual void initialize();
     virtual void processOptions(const Options& options);
     virtual void ready(PointContext ctx);
     virtual void write(const PointBuffer& pointBuffer);
     virtual void done(PointContext ctx);
 
-    static Options getDefaultOptions();
-
-protected:
-
     std::unique_ptr<oPRCFile> m_prcFile;
     std::string m_prcFilename;
-    pdal::Bounds<double> m_bounds;
+    pdal::BOX3D m_bounds;
 
     int m_outputFormat;
     int m_colorScheme;
@@ -97,8 +96,8 @@ protected:
 
 private:
 
-    Writer& operator=(const Writer&); // not implemented
-    Writer(const Writer&); // not implemented
+    PrcWriter& operator=(const PrcWriter&); // not implemented
+    PrcWriter(const PrcWriter&); // not implemented
 
 };
 
