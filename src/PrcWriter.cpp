@@ -377,7 +377,7 @@ void PrcWriter::write(const PointBuffer& data)
         }
         else if (m_contrastStretch == CONTRAST_STRETCH_LINEAR)
         {
-            range = m_bounds.minz - m_bounds.minz;
+            range = m_bounds.maxz - m_bounds.minz;
             step = range / 9;
             t0 = m_bounds.minz + 1 * step;
             t1 = m_bounds.minz + 2 * step;
