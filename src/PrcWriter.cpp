@@ -1,6 +1,6 @@
 /******************************************************************************
 * This file is part of a tool for producing 3D content in the PRC format.
-* Copyright (c) 2013-2014, Bradley J Chambers, brad.chambers@gmail.com
+* Copyright (c) 2013-2015, Bradley J Chambers, brad.chambers@gmail.com
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -16,61 +16,47 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
-#include <prc/PrcWriter.hpp>
+#include "PrcWriter.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/erase.hpp>
-#include <boost/format.hpp>
 
 #include <hpdf.h>
 #include <hpdf_u3d.h>
 #include <hpdf_annotation.h>
 
 #include <pdal/Dimension.hpp>
-#include <pdal/PointBuffer.hpp>
+#include <pdal/PointView.hpp>
 #include <pdal/pdal_macros.hpp>
 #include <pdal/StageFactory.hpp>
+#include <pdal/util/Utils.hpp>
 
-#include <prc/oPRCFile.hpp>
-#include <prc/ColorQuantizer.hpp>
-
-CREATE_WRITER_PLUGIN(prc, pdal::drivers::prc::PrcWriter)
-
-enum OUTPUT_FORMAT
-{
-    OUTPUT_FORMAT_PDF,
-    OUTPUT_FORMAT_PRC
-};
-
-enum COLOR_SCHEME
-{
-    COLOR_SCHEME_SOLID,
-    COLOR_SCHEME_ORANGES,
-    COLOR_SCHEME_BLUE_GREEN
-};
-
-enum CONTRAST_STRETCH
-{
-    CONTRAST_STRETCH_LINEAR,
-    CONTRAST_STRETCH_SQRT
-};
+#include "oPRCFile.hpp"
+#include "ColorQuantizer.hpp"
 
 namespace pdal
 {
-namespace drivers
+
+static PluginInfo const s_info = PluginInfo(
+                                     "writers.prc",
+                                     "PRC Writer",
+                                     "");
+
+CREATE_SHARED_PLUGIN(1, 0, PrcWriter, Writer, s_info)
+
+std::string PrcWriter::getName() const
 {
-namespace prc
-{
+    return s_info.name;
+}
+
 
 PrcWriter::PrcWriter()
-    : pdal::Writer()
+    : Writer()
     , m_outputFormat(OUTPUT_FORMAT_PDF)
     , m_colorScheme(COLOR_SCHEME_SOLID)
     , m_contrastStretch(CONTRAST_STRETCH_LINEAR)
@@ -80,46 +66,49 @@ PrcWriter::PrcWriter()
 void PrcWriter::processOptions(const Options& options)
 {
     m_prcFilename = options.getValueOrThrow<std::string>("prc_filename");
-    std::string output_format = options.getValueOrDefault<std::string>("output_format", "pdf");
-    if (boost::iequals(output_format, "pdf"))
+    std::string output_format =
+        options.getValueOrDefault<std::string>("output_format", "pdf");
+    if (Utils::iequals(output_format, "pdf"))
         m_outputFormat = OUTPUT_FORMAT_PDF;
-    else if (boost::iequals(output_format, "prc"))
+    else if (Utils::iequals(output_format, "prc"))
         m_outputFormat = OUTPUT_FORMAT_PRC;
     else
     {
         std::ostringstream oss;
         oss << "Unrecognized output format " << output_format;
-        throw prc_driver_error("Unrecognized output format");
+        throw pdal_error("Unrecognized output format");
     }
 
-    std::string color_scheme = options.getValueOrDefault<std::string>("color_scheme", "solid");
+    std::string color_scheme =
+        options.getValueOrDefault<std::string>("color_scheme", "solid");
     log()->get(LogLevel::Debug2) << color_scheme << " scheme" << std::endl;
 
-    if (boost::iequals(color_scheme, "solid"))
+    if (Utils::iequals(color_scheme, "solid"))
         m_colorScheme = COLOR_SCHEME_SOLID;
-    else if (boost::iequals(color_scheme, "oranges"))
+    else if (Utils::iequals(color_scheme, "oranges"))
         m_colorScheme = COLOR_SCHEME_ORANGES;
-    else if (boost::iequals(color_scheme, "blue_green"))
+    else if (Utils::iequals(color_scheme, "blue_green"))
         m_colorScheme = COLOR_SCHEME_BLUE_GREEN;
     else
     {
         std::ostringstream oss;
         oss << "Unrecognized color scheme " << color_scheme;
-        throw prc_driver_error("Unrecognized color scheme");
+        throw pdal_error("Unrecognized color scheme");
     }
 
-    std::string contrast_stretch = getOptions().getValueOrDefault<std::string>("contrast_stretch", "linear");
+    std::string contrast_stretch =
+        getOptions().getValueOrDefault<std::string>("contrast_stretch", "linear");
     log()->get(LogLevel::Debug2) << contrast_stretch << " stretch" << std::endl;
 
-    if (boost::iequals(contrast_stretch, "linear"))
+    if (Utils::iequals(contrast_stretch, "linear"))
         m_contrastStretch = CONTRAST_STRETCH_LINEAR;
-    else if (boost::iequals(contrast_stretch, "sqrt"))
+    else if (Utils::iequals(contrast_stretch, "sqrt"))
         m_contrastStretch = CONTRAST_STRETCH_SQRT;
     else
     {
         std::ostringstream oss;
         oss << "Unrecognized contrast stretch " << contrast_stretch;
-        throw prc_driver_error("Unrecognized contrast stretch");
+        throw pdal_error("Unrecognized contrast stretch");
     }
 
     m_fov = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("fov", 30.0f));
@@ -134,6 +123,7 @@ void PrcWriter::processOptions(const Options& options)
 
 }
 
+
 void PrcWriter::initialize()
 {
     m_prcFile = std::unique_ptr<oPRCFile>(new oPRCFile(m_prcFilename,1000));
@@ -144,41 +134,26 @@ Options PrcWriter::getDefaultOptions()
 {
     Options options;
 
-    Option prc_filename("prc_filename", "", "Filename to write PRC file to");
-    Option pdf_filename("pdf_filename", "", "Filename to write PDF file to");
-    Option output_format("output_format", "", "PRC or PDF");
-    Option color_scheme("color_scheme", "", "Solid, oranges, or blue-green");
-    Option contrast_stretch("contrast_stretch", "", "Linear or sqrt");
-    Option fov("fov", "", "Field of View");
-    Option coox("coox", "", "Camera coox");
-    Option cooy("cooy", "", "Camera cooy");
-    Option cooz("cooz", "", "Camera cooz");
-    Option c2cx("c2cx", "", "Camera c2cx");
-    Option c2cy("c2cy", "", "Camera c2cy");
-    Option c2cz("c2cz", "", "Camera c2cz");
-    Option roo("roo", "", "Camera roo");
-    Option roll("roll", "", "Camera roll");
-
-    options.add(prc_filename);
-    options.add(pdf_filename);
-    options.add(output_format);
-    options.add(color_scheme);
-    options.add(contrast_stretch);
-    options.add(fov);
-    options.add(coox);
-    options.add(cooy);
-    options.add(cooz);
-    options.add(c2cx);
-    options.add(c2cy);
-    options.add(c2cz);
-    options.add(roo);
-    options.add(roll);
+    options.add("prc_filename", "Filename to write PRC file to");
+    options.add("pdf_filename", "Filename to write PDF file to");
+    options.add("output_format", "PRC or PDF");
+    options.add("color_scheme", "Solid, oranges, or blue-green");
+    options.add("contrast_stretch", "Linear or sqrt");
+    options.add("fov", "Field of View");
+    options.add("coox", "Camera coox");
+    options.add("cooy", "Camera cooy");
+    options.add("cooz", "Camera cooz");
+    options.add("c2cx", "Camera c2cx");
+    options.add("c2cy", "Camera c2cy");
+    options.add("c2cz", "Camera c2cz");
+    options.add("roo", "Camera roo");
+    options.add("roll", "Camera roll");
 
     return options;
 }
 
 
-void PrcWriter::ready(PointContext ctx)
+void PrcWriter::ready(PointTableRef table)
 {
     PRCoptions grpopt;
     grpopt.no_break = true;
@@ -189,13 +164,16 @@ void PrcWriter::ready(PointContext ctx)
 }
 
 
-void PrcWriter::done(PointContext ctx)
+void PrcWriter::done(PointTableRef table)
 {
+    log()->get(LogLevel::Debug4) << "Finalizing PRC." << std::endl;
     m_prcFile->endgroup();
     m_prcFile->finish();
 
     if (m_outputFormat == OUTPUT_FORMAT_PDF)
     {
+        log()->get(LogLevel::Debug4) << "Writing PDF." << std::endl;
+
         const float width = 256.0f;
         const float height = 256.0f;
         const double depth = std::sqrt(width*height);
@@ -219,7 +197,8 @@ void PrcWriter::done(PointContext ctx)
         HPDF_Page_SetWidth(page, width);
         HPDF_Page_SetHeight(page, height);
 
-        std::string prcFilename = getOptions().getValueOrThrow<std::string>("prc_filename");
+        std::string prcFilename =
+            getOptions().getValueOrThrow<std::string>("prc_filename");
         log()->get(LogLevel::Debug2) << "prcFilename: " << prcFilename << std::endl;
 
         u3d = HPDF_LoadU3DFromFile(pdf, prcFilename.c_str());
@@ -234,9 +213,13 @@ void PrcWriter::done(PointContext ctx)
             throw pdal_error("cannot create DefaultView!");
         }
 
-        log()->get(LogLevel::Debug2) << boost::format("camera %f %f %f %f %f %f %f %f") % m_coox % m_cooy % m_cooz % m_c2cx % m_c2cy % m_c2cz % m_roo % m_roll << std::endl ;
+        char msg[100];
+        sprintf(msg, "camera %f %f %f %f %f %f %f %f", m_coox,
+                m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
+        log()->get(LogLevel::Debug2) << msg << std::endl ;
 
-        HPDF_3DView_SetCamera(view, m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
+        HPDF_3DView_SetCamera(view, m_coox, m_cooy, m_cooz, m_c2cx, m_c2cy,
+                              m_c2cz, m_roo, m_roll);
         HPDF_3DView_SetPerspectiveProjection(view, 30.0);
         HPDF_3DView_SetBackgroundColor(view, 0, 0, 0);
         HPDF_3DView_SetLighting(view, "Headlamp");
@@ -256,43 +239,47 @@ void PrcWriter::done(PointContext ctx)
         //HPDF_Dict action = (HPDF_Dict) HPDF_Dict_GetItem( annot, "3DA", HPDF_OCLASS_DICT );
         //HPDF_Dict_AddBoolean( action, "TB", HPDF_TRUE );
 
-        std::string pdfFilename = getOptions().getValueOrThrow<std::string>("pdf_filename");
+        std::string pdfFilename =
+            getOptions().getValueOrThrow<std::string>("pdf_filename");
         HPDF_STATUS success = HPDF_SaveToFile(pdf, pdfFilename.c_str());
 
         HPDF_Free(pdf);
     }
 }
 
-void PrcWriter::write(const PointBuffer& data)
+void PrcWriter::write(const PointViewPtr view)
 {
     uint32_t numPoints = 0;
 
-    m_bounds = data.calculateBounds();
+    view->calculateBounds(m_bounds);
     double zmin = m_bounds.minz;
     double zmax = m_bounds.maxz;
     double cz2 = (zmax-zmin)/2+zmin;
     HPDF_REAL cooz = static_cast<HPDF_REAL>(cz2);
 
-    log()->get(LogLevel::Debug2) << boost::format("cz: %f, min: %f, max: %f, cooz: %f") % cz2 % zmin % zmax % cooz << std::endl ;
+    char msg[100];
+    sprintf(msg, "cz: %f, min: %f, max: %f, cooz: %f", cz2, zmin, zmax, cooz);
+    log()->get(LogLevel::Debug2) << msg << std::endl ;
 
     double cx = (m_bounds.maxx-m_bounds.minx)/2+m_bounds.minx;
     double cy = (m_bounds.maxy-m_bounds.miny)/2+m_bounds.miny;
     double cz = (m_bounds.maxz-m_bounds.minz)/2+m_bounds.minz;
 
-    if ((m_colorScheme == COLOR_SCHEME_ORANGES) || (m_colorScheme == COLOR_SCHEME_BLUE_GREEN))
+    if ((m_colorScheme == COLOR_SCHEME_ORANGES) ||
+            (m_colorScheme == COLOR_SCHEME_BLUE_GREEN))
     {
         double **p0, **p1, **p2, **p3, **p4, **p5, **p6, **p7, **p8;
-        p0 = (double**) malloc(data.size()*sizeof(double*));
-        p1 = (double**) malloc(data.size()*sizeof(double*));
-        p2 = (double**) malloc(data.size()*sizeof(double*));
-        p3 = (double**) malloc(data.size()*sizeof(double*));
-        p4 = (double**) malloc(data.size()*sizeof(double*));
-        p5 = (double**) malloc(data.size()*sizeof(double*));
-        p6 = (double**) malloc(data.size()*sizeof(double*));
-        p7 = (double**) malloc(data.size()*sizeof(double*));
-        p8 = (double**) malloc(data.size()*sizeof(double*));
+        p0 = (double**) malloc(view->size()*sizeof(double*));
+        p1 = (double**) malloc(view->size()*sizeof(double*));
+        p2 = (double**) malloc(view->size()*sizeof(double*));
+        p3 = (double**) malloc(view->size()*sizeof(double*));
+        p4 = (double**) malloc(view->size()*sizeof(double*));
+        p5 = (double**) malloc(view->size()*sizeof(double*));
+        p6 = (double**) malloc(view->size()*sizeof(double*));
+        p7 = (double**) malloc(view->size()*sizeof(double*));
+        p8 = (double**) malloc(view->size()*sizeof(double*));
 
-        for (point_count_t i = 0; i < data.size(); ++i)
+        for (point_count_t i = 0; i < view->size(); ++i)
         {
             p0[i] = (double*) malloc(3*sizeof(double));
             p1[i] = (double*) malloc(3*sizeof(double));
@@ -336,7 +323,8 @@ void PrcWriter::write(const PointBuffer& data)
             c0.Set(127.0/255.0,  39.0/255.0,   4.0/255.0);
         }
 
-        double range(0.0), step(0.0), t0(0.0), t1(0.0), t2(0.0), t3(0.0), t4(0.0), t5(0.0), t6(0.0), t7(0.0);
+        double range(0.0), step(0.0), t0(0.0), t1(0.0), t2(0.0), t3(0.0),
+               t4(0.0), t5(0.0), t6(0.0), t7(0.0);
 
         if (m_contrastStretch == CONTRAST_STRETCH_SQRT)
         {
@@ -389,7 +377,10 @@ void PrcWriter::write(const PointBuffer& data)
             t7 = m_bounds.minz + 8 * step;
         }
 
-        log()->get(LogLevel::Debug2) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl ;
+        char msg[100];
+        sprintf(msg, "z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f",
+                range, step, t0, t1, t2, t3, t4, t5, t6, t7);
+        log()->get(LogLevel::Debug2) << msg << std::endl ;
         t0 -= cz;
         t1 -= cz;
         t2 -= cz;
@@ -398,16 +389,20 @@ void PrcWriter::write(const PointBuffer& data)
         t5 -= cz;
         t6 -= cz;
         t7 -= cz;
-        log()->get(LogLevel::Debug2) << boost::format("z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f") % range % step % t0 % t1 % t2 % t3 % t4 % t5 %t6 % t7 << std::endl;
+
+        sprintf(msg, "z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f",
+                range, step, t0, t1, t2, t3, t4, t5, t6, t7);
+        log()->get(LogLevel::Debug2) << msg << std::endl;
 
         int id0, id1, id2, id3, id4, id5, id6, id7, id8;
         id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = id8 = 0;
 
-        for (point_count_t i = 0; i < data.size(); ++i)
+        for (point_count_t i = 0; i < view->size(); ++i)
         {
-            double xd = data.getFieldAs<double>(Dimension::Id::X, i) - cx;
-            double yd = data.getFieldAs<double>(Dimension::Id::Y, i) - cy;
-            double zd = data.getFieldAs<double>(Dimension::Id::Z, i) - cz;
+            using namespace Dimension::Id;
+            double xd = view->getFieldAs<double>(X, i) - cx;
+            double yd = view->getFieldAs<double>(Y, i) - cy;
+            double zd = view->getFieldAs<double>(Z, i) - cz;
             //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
             if (zd < t0)
@@ -477,7 +472,9 @@ void PrcWriter::write(const PointBuffer& data)
             numPoints++;
         }
 
-        log()->get(LogLevel::Debug2) << boost::format("ids: %d %d %d %d %d %d %d %d %d")  % id0 % id1 % id2 % id3 % id4 % id5 % id6 % id7 % id8 ;
+        sprintf(msg, "ids: %d %d %d %d %d %d %d %d %d", id0, id1,
+                id2, id3, id4, id5, id6, id7, id8);
+        log()->get(LogLevel::Debug2) << msg << std::endl;
 
         m_prcFile->addPoints(id0, const_cast<const double**>(p0), c0, 1.0);
         m_prcFile->addPoints(id1, const_cast<const double**>(p1), c1, 1.0);
@@ -489,7 +486,7 @@ void PrcWriter::write(const PointBuffer& data)
         m_prcFile->addPoints(id7, const_cast<const double**>(p7), c7, 1.0);
         m_prcFile->addPoints(id8, const_cast<const double**>(p8), c8, 1.0);
 
-        for (point_count_t i = 0; i < data.size(); ++i)
+        for (point_count_t i = 0; i < view->size(); ++i)
         {
             free(p0[i]);
             free(p1[i]);
@@ -513,23 +510,28 @@ void PrcWriter::write(const PointBuffer& data)
     }
     else
     {
+        log()->get(LogLevel::Debug4) << "No color scheme provided." << std::endl;
+
         bool bHaveColor(false);
         if (Dimension::Id::Red && Dimension::Id::Green && Dimension::Id::Blue)
             bHaveColor = true;
 
         if (bHaveColor)
         {
+            log()->get(LogLevel::Debug4) << "Using RGB." << std::endl;
+
             uint16_t histogram[INT16_MAX] = {0};
 
             double xd(0.0);
             double yd(0.0);
             double zd(0.0);
 
-            for (point_count_t point = 0; point < data.size(); ++point)
+            for (point_count_t i = 0; i < view->size(); ++i)
             {
-                uint16_t r = data.getFieldAs<uint16_t>(Dimension::Id::Red, point);
-                uint16_t g = data.getFieldAs<uint16_t>(Dimension::Id::Green, point);
-                uint16_t b = data.getFieldAs<uint16_t>(Dimension::Id::Blue, point);
+                using namespace Dimension::Id;
+                uint16_t r = view->getFieldAs<uint16_t>(Red, i);
+                uint16_t g = view->getFieldAs<uint16_t>(Green, i);
+                uint16_t b = view->getFieldAs<uint16_t>(Blue, i);
                 uint16_t color = RGB(r, g, b);
                 histogram[color]++;
             }
@@ -542,14 +544,15 @@ void PrcWriter::write(const PointBuffer& data)
             std::vector<std::vector<int> > indices;
             indices.resize(256);
 
-            for (point_count_t point = 0; point < data.size(); ++point)
+            for (point_count_t i = 0; i < view->size(); ++i)
             {
-                uint16_t r = data.getFieldAs<uint16_t>(Dimension::Id::Red, point);
-                uint16_t g = data.getFieldAs<uint16_t>(Dimension::Id::Green, point);
-                uint16_t b = data.getFieldAs<uint16_t>(Dimension::Id::Blue, point);
+                using namespace Dimension::Id;
+                uint16_t r = view->getFieldAs<uint16_t>(Red, i);
+                uint16_t g = view->getFieldAs<uint16_t>(Green, i);
+                uint16_t b = view->getFieldAs<uint16_t>(Blue, i);
                 uint16_t color = RGB(r, g, b);
                 uint16_t colorIndex = histogram[color];
-                indices[colorIndex].push_back(point);
+                indices[colorIndex].push_back(i);
             }
 
             for (uint32_t level = 0; level < 256; ++level)
@@ -563,12 +566,13 @@ void PrcWriter::write(const PointBuffer& data)
                 for (int point = 0; point < num_points; ++point)
                 {
                     points[point] = new double[3];
-                    
+
                     int idx = indices[level][point];
 
-                    xd = data.getFieldAs<double>(Dimension::Id::X, idx) - cx;
-                    yd = data.getFieldAs<double>(Dimension::Id::Y, idx) - cy;
-                    zd = data.getFieldAs<double>(Dimension::Id::Z, idx) - cz;
+                    using namespace Dimension::Id;
+                    xd = view->getFieldAs<double>(X, idx) - cx;
+                    yd = view->getFieldAs<double>(Y, idx) - cy;
+                    zd = view->getFieldAs<double>(Z, idx) - cz;
 
                     points[point][0] = xd;
                     points[point][1] = yd;
@@ -580,7 +584,9 @@ void PrcWriter::write(const PointBuffer& data)
                 double g = static_cast<double>((int)(colMap[level][1])/255.0);
                 double b = static_cast<double>((int)(colMap[level][2])/255.0);
 
-                m_prcFile->addPoints(num_points, const_cast<const double**>(points), RGBAColour(r, g, b, 1.0), 5.0);
+                m_prcFile->addPoints(num_points,
+                                     const_cast<const double**>(points),
+                                     RGBAColour(r, g, b, 1.0), 5.0);
 
                 // De-Allocate memory to prevent memory leak
                 for (int point = 0; point < num_points; ++point)
@@ -592,9 +598,11 @@ void PrcWriter::write(const PointBuffer& data)
         }
         else
         {
+            log()->get(LogLevel::Debug4) << "Using solid color." << std::endl;
+
             double **points;
-            points = (double**) malloc(data.size()*sizeof(double*));
-            for (point_count_t i = 0; i < data.size(); ++i)
+            points = (double**) malloc(view->size()*sizeof(double*));
+            for (point_count_t i = 0; i < view->size(); ++i)
             {
                 points[i] = (double*) malloc(3*sizeof(double));
             }
@@ -603,15 +611,18 @@ void PrcWriter::write(const PointBuffer& data)
             double yd(0.0);
             double zd(0.0);
 
-            for (point_count_t i = 0; i < data.size(); ++i)
+            for (point_count_t i = 0; i < view->size(); ++i)
             {
-                xd = data.getFieldAs<double>(Dimension::Id::X, i) - cx;
-                yd = data.getFieldAs<double>(Dimension::Id::Y, i) - cy;
-                zd = data.getFieldAs<double>(Dimension::Id::Z, i) - cz;
+                using namespace Dimension::Id;
+                xd = view->getFieldAs<double>(X, i) - cx;
+                yd = view->getFieldAs<double>(Y, i) - cy;
+                zd = view->getFieldAs<double>(Z, i) - cz;
 
-                if (i % 10000 == 0) 
+                if (i % 10000 == 0)
                 {
-                    log()->get(LogLevel::Debug2) << boost::format("small point %f %f %f")  % xd % yd % zd ;
+                    char msg[100];
+                    sprintf(msg, "small point %f %f %f", xd, yd, zd);
+                    log()->get(LogLevel::Debug2) << msg << std::endl;
                 }
                 points[i][0] = xd;
                 points[i][1] = yd;
@@ -620,9 +631,10 @@ void PrcWriter::write(const PointBuffer& data)
                 numPoints++;
             }
 
-            m_prcFile->addPoints(numPoints, const_cast<const double**>(points), RGBAColour(1.0,1.0,0.0,1.0),1.0);
+            m_prcFile->addPoints(numPoints, const_cast<const double**>(points),
+                                 RGBAColour(1.0,1.0,0.0,1.0),1.0);
 
-            for (point_count_t i = 0; i < data.size(); ++i)
+            for (point_count_t i = 0; i < view->size(); ++i)
             {
                 free(points[i]);
             }
@@ -631,6 +643,4 @@ void PrcWriter::write(const PointBuffer& data)
     }
 }
 
-}
-}
-} // namespaces
+} // namespace pdal

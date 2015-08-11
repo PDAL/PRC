@@ -1,6 +1,6 @@
 /******************************************************************************
 * This file is part of a tool for producing 3D content in the PRC format.
-* Copyright (c) 2013-2014, Bradley J Chambers, brad.chambers@gmail.com
+* Copyright (c) 2013-2015, Bradley J Chambers, brad.chambers@gmail.com
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -16,8 +16,7 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
-#ifndef _COLOR_QUANTIZER_H
-#define _COLOR_QUANTIZER_H
+#pragma once
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
@@ -29,10 +28,6 @@
 #define BLUE(x)    (byte)((((x)>>10)&255)<< 3)
 
 namespace pdal
-{
-namespace drivers
-{
-namespace prc
 {
 
 typedef unsigned char byte;
@@ -70,9 +65,4 @@ public:
     word medianCut(word hist[], byte ColMap[][3], int maxcubes);
 };
 
-}  // prc
-}  // drivers
-}  // pdal
-
-#endif //_COLOR_QUANTIZER_H
-
+}  // namespace pdal

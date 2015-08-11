@@ -1,6 +1,6 @@
 /******************************************************************************
 * This file is part of a tool for producing 3D content in the PRC format.
-* Copyright (c) 2013-2014, Bradley J Chambers, brad.chambers@gmail.com
+* Copyright (c) 2013-2015, Bradley J Chambers, brad.chambers@gmail.com
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -16,17 +16,14 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
-#include <prc/ColorQuantizer.hpp>
+#include "ColorQuantizer.hpp"
 
 #include <algorithm>
 #include <iostream>
 
 namespace pdal
 {
-namespace drivers
-{
-namespace prc
-{
+
 ColorQuantizer::ColorQuantizer()
 {
 }
@@ -66,7 +63,8 @@ word ColorQuantizer::medianCut(word hist[], byte colMap[][3], int maxCubes)
         splitpos = -1;
         for (k = 0; k <= ncubes-1; k++)
         {
-            if ((cubeList[k].lower != cubeList[k].upper) && cubeList[k].level < level)
+            if ((cubeList[k].lower != cubeList[k].upper) &&
+                    cubeList[k].level < level)
             {
                 level = cubeList[k].level;
                 splitpos = k;
@@ -113,7 +111,7 @@ word ColorQuantizer::medianCut(word hist[], byte colMap[][3], int maxCubes)
         cubeB.level = cube.level + 1;
         shrink(&cubeB);
         cubeList[ncubes++] = cubeB;
-        
+
         if ((ncubes % 10) == 0)
         {
             std::cerr << ".";
@@ -121,7 +119,7 @@ word ColorQuantizer::medianCut(word hist[], byte colMap[][3], int maxCubes)
     }
 
     invMap(hist, colMap, ncubes);
-    
+
     return ((word)ncubes);
 }
 
@@ -217,6 +215,4 @@ int ColorQuantizer::compare(const void *a1, const void *a2)
     return ((int)(c_1 - c_2));
 }
 
-}
-}
-} //namespace pdal::drivers:prc
+} //namespace pdal
