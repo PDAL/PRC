@@ -1,6 +1,6 @@
 /******************************************************************************
 * This file is part of a tool for producing 3D content in the PRC format.
-* Copyright (c) 2013, Bradley J Chambers, brad.chambers@gmail.com
+* Copyright (c) 2013-2015, Bradley J Chambers, brad.chambers@gmail.com
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License as published by
@@ -16,69 +16,67 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ****************************************************************************/
 
-#ifndef INCLUDED_DRIVERS_PRC_WRITER_HPP
-#define INCLUDED_DRIVERS_PRC_WRITER_HPP
+#pragma once
 
+#include <cstdint>
+#include <memory>
 #include <string>
-
-#include <boost/cstdint.hpp>
 
 #include <hpdf.h>
 
 #include <prc/oPRCFile.hpp>
 
 #include <pdal/pdal_export.hpp>
-#include <pdal/pdal_internal.hpp>
-#include <pdal/Bounds.hpp>
 #include <pdal/Writer.hpp>
-#include <pdal/FileUtils.hpp>
-#include <pdal/StageFactory.hpp>
 
+namespace
+{
+class BOX3D;
+}
 
 namespace pdal
 {
-namespace drivers
-{
-namespace prc
-{
 
-
-class prc_driver_error : public pdal_error
+enum OUTPUT_FORMAT
 {
-public:
-    prc_driver_error(std::string const& msg)
-        : pdal_error(msg)
-    {}
+    OUTPUT_FORMAT_PDF,
+    OUTPUT_FORMAT_PRC
 };
 
-//PDAL_C_START
+enum COLOR_SCHEME
+{
+    COLOR_SCHEME_SOLID,
+    COLOR_SCHEME_ORANGES,
+    COLOR_SCHEME_BLUE_GREEN
+};
 
-//PDAL_DLL void PDALRegister_writer_prc(void* factory);
+enum CONTRAST_STRETCH
+{
+    CONTRAST_STRETCH_LINEAR,
+    CONTRAST_STRETCH_SQRT
+};
 
-//PDAL_C_END
-
-//pdal::Writer* createPRCWriter(const pdal::Options& options);
-
-class PDAL_DLL PrcWriter : public pdal::Writer
+class PDAL_DLL PrcWriter : public Writer
 {
 public:
-    SET_STAGE_NAME("drivers.prc.writer", "PRC Writer")
-    SET_STAGE_ENABLED(true)
-
     PrcWriter();
 
-    static Options getDefaultOptions();
+    static void * create();
+    static int32_t destroy(void *);
+    std::string getName() const;
 
-protected:
+    Options getDefaultOptions();
+
+private:
     virtual void initialize();
     virtual void processOptions(const Options& options);
-    virtual void ready(PointContext ctx);
-    virtual void write(const PointBuffer& pointBuffer);
-    virtual void done(PointContext ctx);
+    virtual void ready(PointTableRef table);
+    virtual void write(const PointViewPtr view);
+    virtual void done(PointTableRef table);
 
     std::unique_ptr<oPRCFile> m_prcFile;
     std::string m_prcFilename;
-    pdal::BOX3D m_bounds;
+    BOX3D m_bounds;
 
     int m_outputFormat;
     int m_colorScheme;
@@ -94,15 +92,9 @@ protected:
     HPDF_REAL m_roo;
     HPDF_REAL m_roll;
 
-private:
-
     PrcWriter& operator=(const PrcWriter&); // not implemented
     PrcWriter(const PrcWriter&); // not implemented
 
 };
 
-}
-}
-} // namespaces
-
-#endif
+} // namespace pdal

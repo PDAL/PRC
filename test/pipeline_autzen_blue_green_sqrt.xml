@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Pipeline version="1.0">
-  <Writer type="drivers.prc.writer">
+  <Writer type="writers.prc">
     <Option name="pdf_filename">
 	    out.pdf
     </Option>
@@ -16,7 +16,7 @@
     <Option name="contrast_stretch">
       sqrt
     </Option>
-      <Reader type="drivers.las.reader">
+      <Reader type="readers.las">
         <Option name="filename">
 		./data/autzen-thin.las
         </Option>
