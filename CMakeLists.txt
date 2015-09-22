@@ -179,6 +179,7 @@ include_directories(${HPDF_INCLUDE_DIR})
 #------------------------------------------------------------------------------
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/prc)
 
 if(WIN32)
   set(PRC_WRITER_NAME libpdal_plugin_writer_prc)
