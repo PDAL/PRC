@@ -165,10 +165,10 @@ mark_as_advanced(CLEAR ZLIB_INCLUDE_DIR)
 mark_as_advanced(CLEAR ZLIP_LIBRARY)
 include_directories(${ZLIB_INCLUDE_DIR})
 
-find_package(PDAL REQUIRED)
-mark_as_advanced(CLEAR PDAL_INCLUDE_DIR)
+find_package(PDAL 1.0 REQUIRED CONFIG NO_POLICY_SCOPE)
+mark_as_advanced(CLEAR PDAL_INCLUDE_DIRS)
 mark_as_advanced(CLEAR PDAL_LIBRARIES)
-include_directories(${PDAL_INCLUDE_DIR})
+include_directories(${PDAL_INCLUDE_DIRS})
 
 find_library(HPDF_LIBRARY hpdf)
 find_path(HPDF_INCLUDE_DIR hpdf_u3d.h)
@@ -210,7 +210,7 @@ set(PRC_SOURCES
 
 add_library(${PRC_WRITER_NAME} SHARED ${PRC_SOURCES})
 target_link_libraries(${PRC_WRITER_NAME}
-                      ${PDAL_LIBRARY}
+                      ${PDAL_LIBRARIES}
 		      ${ZLIB_LIBRARY}
 		      ${HPDF_LIBRARY})
 set_target_properties(${PRC_WRITER_NAME} PROPERTIES
