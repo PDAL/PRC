@@ -66,6 +66,7 @@ PrcWriter::PrcWriter()
 void PrcWriter::processOptions(const Options& options)
 {
     m_prcFilename = options.getValueOrThrow<std::string>("prc_filename");
+    m_pdfFilename = options.getValueOrThrow<std::string>("pdf_filename");
     std::string output_format =
         options.getValueOrDefault<std::string>("output_format", "pdf");
     if (Utils::iequals(output_format, "pdf"))
@@ -97,7 +98,7 @@ void PrcWriter::processOptions(const Options& options)
     }
 
     std::string contrast_stretch =
-        getOptions().getValueOrDefault<std::string>("contrast_stretch", "linear");
+        options.getValueOrDefault<std::string>("contrast_stretch", "linear");
     log()->get(LogLevel::Debug2) << contrast_stretch << " stretch" << std::endl;
 
     if (Utils::iequals(contrast_stretch, "linear"))
@@ -111,15 +112,15 @@ void PrcWriter::processOptions(const Options& options)
         throw pdal_error("Unrecognized contrast stretch");
     }
 
-    m_fov = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("fov", 30.0f));
-    m_coox = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("coox", 0.0f));
-    m_cooy = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("cooy", 0.0f));
-    m_cooz = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("cooz", 0.0f));
-    m_c2cx = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("c2cx", 0.0f));
-    m_c2cy = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("c2cy", 0.0f));
-    m_c2cz = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("c2cz", 1.0f));
-    m_roo = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("roo", 20.0f));
-    m_roll = static_cast<HPDF_REAL>(getOptions().getValueOrDefault<double>("roll", 0.0f));
+    m_fov = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("fov", 30.0f));
+    m_coox = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("coox", 0.0f));
+    m_cooy = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("cooy", 0.0f));
+    m_cooz = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("cooz", 0.0f));
+    m_c2cx = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("c2cx", 0.0f));
+    m_c2cy = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("c2cy", 0.0f));
+    m_c2cz = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("c2cz", 1.0f));
+    m_roo = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("roo", 20.0f));
+    m_roll = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("roll", 0.0f));
 
 }
 
@@ -197,11 +198,9 @@ void PrcWriter::done(PointTableRef table)
         HPDF_Page_SetWidth(page, width);
         HPDF_Page_SetHeight(page, height);
 
-        std::string prcFilename =
-            getOptions().getValueOrThrow<std::string>("prc_filename");
-        log()->get(LogLevel::Debug2) << "prcFilename: " << prcFilename << std::endl;
+        log()->get(LogLevel::Debug2) << "prcFilename: " << m_prcFilename << std::endl;
 
-        u3d = HPDF_LoadU3DFromFile(pdf, prcFilename.c_str());
+        u3d = HPDF_LoadU3DFromFile(pdf, m_prcFilename.c_str());
         if (!u3d)
         {
             throw pdal_error("cannot load U3D object!");
@@ -239,10 +238,7 @@ void PrcWriter::done(PointTableRef table)
         //HPDF_Dict action = (HPDF_Dict) HPDF_Dict_GetItem( annot, "3DA", HPDF_OCLASS_DICT );
         //HPDF_Dict_AddBoolean( action, "TB", HPDF_TRUE );
 
-        std::string pdfFilename =
-            getOptions().getValueOrThrow<std::string>("pdf_filename");
-        HPDF_STATUS success = HPDF_SaveToFile(pdf, pdfFilename.c_str());
-
+        HPDF_SaveToFile(pdf, m_pdfFilename.c_str());
         HPDF_Free(pdf);
     }
 }
