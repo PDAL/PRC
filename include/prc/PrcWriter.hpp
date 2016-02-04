@@ -76,6 +76,7 @@ private:
 
     std::unique_ptr<oPRCFile> m_prcFile;
     std::string m_prcFilename;
+    std::string m_pdfFilename;
     BOX3D m_bounds;
 
     int m_outputFormat;
