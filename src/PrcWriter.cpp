@@ -42,10 +42,10 @@
 namespace pdal
 {
 
-static PluginInfo const s_info = PluginInfo(
-                                     "writers.prc",
-                                     "PRC Writer",
-                                     "");
+static pdal::PluginInfo const s_info = pdal::PluginInfo(
+                                             "writers.prc",
+                                             "PRC Writer",
+                                             "");
 
 CREATE_SHARED_PLUGIN(1, 0, PrcWriter, Writer, s_info)
 
@@ -63,12 +63,26 @@ PrcWriter::PrcWriter()
 {}
 
 
-void PrcWriter::processOptions(const Options& options)
+void PrcWriter::addArgs(ProgramArgs& args)
 {
-    m_prcFilename = options.getValueOrThrow<std::string>("prc_filename");
-    m_pdfFilename = options.getValueOrThrow<std::string>("pdf_filename");
-    std::string output_format =
-        options.getValueOrDefault<std::string>("output_format", "pdf");
+    std::string output_format;
+    std::string color_scheme;
+    std::string contrast_stretch;
+    args.add("prc_filename", "Filename to write PRC file to", m_prcFilename);
+    args.add("pdf_filename", "Filename to write PDF file to", m_pdfFilename);
+    args.add("output_format", "PRC or PDF", output_format, "pdf");
+    args.add("color_scheme", "Solid, oranges, or blue-green", color_scheme, "solid");
+    args.add("contrast_stretch", "Linear or sqrt", contrast_stretch, "linear");
+    args.add("fov", "Field of View", m_fov, 30.0f);
+    args.add("coox", "Camera coox", m_coox, 0.0f);
+    args.add("cooy", "Camera cooy", m_cooy, 0.0f);
+    args.add("cooz", "Camera cooz", m_cooz, 0.0f);
+    args.add("c2cx", "Camera c2cx", m_c2cx, 0.0f);
+    args.add("c2cy", "Camera c2cy", m_c2cy, 0.0f);
+    args.add("c2cz", "Camera c2cz", m_c2cz, 1.0f);
+    args.add("roo", "Camera roo", m_roo, 20.0f);
+    args.add("roll", "Camera roll", m_roll, 0.0f);
+
     if (Utils::iequals(output_format, "pdf"))
         m_outputFormat = OUTPUT_FORMAT_PDF;
     else if (Utils::iequals(output_format, "prc"))
@@ -80,8 +94,6 @@ void PrcWriter::processOptions(const Options& options)
         throw pdal_error("Unrecognized output format");
     }
 
-    std::string color_scheme =
-        options.getValueOrDefault<std::string>("color_scheme", "solid");
     log()->get(LogLevel::Debug2) << color_scheme << " scheme" << std::endl;
 
     if (Utils::iequals(color_scheme, "solid"))
@@ -97,8 +109,6 @@ void PrcWriter::processOptions(const Options& options)
         throw pdal_error("Unrecognized color scheme");
     }
 
-    std::string contrast_stretch =
-        options.getValueOrDefault<std::string>("contrast_stretch", "linear");
     log()->get(LogLevel::Debug2) << contrast_stretch << " stretch" << std::endl;
 
     if (Utils::iequals(contrast_stretch, "linear"))
@@ -112,45 +122,12 @@ void PrcWriter::processOptions(const Options& options)
         throw pdal_error("Unrecognized contrast stretch");
     }
 
-    m_fov = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("fov", 30.0f));
-    m_coox = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("coox", 0.0f));
-    m_cooy = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("cooy", 0.0f));
-    m_cooz = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("cooz", 0.0f));
-    m_c2cx = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("c2cx", 0.0f));
-    m_c2cy = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("c2cy", 0.0f));
-    m_c2cz = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("c2cz", 1.0f));
-    m_roo = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("roo", 20.0f));
-    m_roll = static_cast<HPDF_REAL>(options.getValueOrDefault<double>("roll", 0.0f));
-
 }
 
 
 void PrcWriter::initialize()
 {
     m_prcFile = std::unique_ptr<oPRCFile>(new oPRCFile(m_prcFilename,1000));
-}
-
-
-Options PrcWriter::getDefaultOptions()
-{
-    Options options;
-
-    options.add("prc_filename", "Filename to write PRC file to");
-    options.add("pdf_filename", "Filename to write PDF file to");
-    options.add("output_format", "PRC or PDF");
-    options.add("color_scheme", "Solid, oranges, or blue-green");
-    options.add("contrast_stretch", "Linear or sqrt");
-    options.add("fov", "Field of View");
-    options.add("coox", "Camera coox");
-    options.add("cooy", "Camera cooy");
-    options.add("cooz", "Camera cooz");
-    options.add("c2cx", "Camera c2cx");
-    options.add("c2cy", "Camera c2cy");
-    options.add("c2cz", "Camera c2cz");
-    options.add("roo", "Camera roo");
-    options.add("roll", "Camera roll");
-
-    return options;
 }
 
 
@@ -395,10 +372,10 @@ void PrcWriter::write(const PointViewPtr view)
 
         for (point_count_t i = 0; i < view->size(); ++i)
         {
-            using namespace Dimension::Id;
-            double xd = view->getFieldAs<double>(X, i) - cx;
-            double yd = view->getFieldAs<double>(Y, i) - cy;
-            double zd = view->getFieldAs<double>(Z, i) - cz;
+            using namespace Dimension;
+            double xd = view->getFieldAs<double>(Id::X, i) - cx;
+            double yd = view->getFieldAs<double>(Id::Y, i) - cy;
+            double zd = view->getFieldAs<double>(Id::Z, i) - cz;
             //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
             if (zd < t0)
@@ -508,8 +485,12 @@ void PrcWriter::write(const PointViewPtr view)
     {
         log()->get(LogLevel::Debug4) << "No color scheme provided." << std::endl;
 
+        using namespace Dimension;
         bool bHaveColor(false);
-        if (Dimension::Id::Red && Dimension::Id::Green && Dimension::Id::Blue)
+        bool bHaveRed = view->layout()->hasDim(Id::Red);
+        bool bHaveGreen = view->layout()->hasDim(Id::Green);
+        bool bHaveBlue = view->layout()->hasDim(Id::Blue);
+        if (bHaveRed && bHaveGreen && bHaveBlue)
             bHaveColor = true;
 
         if (bHaveColor)
@@ -524,10 +505,10 @@ void PrcWriter::write(const PointViewPtr view)
 
             for (point_count_t i = 0; i < view->size(); ++i)
             {
-                using namespace Dimension::Id;
-                uint16_t r = view->getFieldAs<uint16_t>(Red, i);
-                uint16_t g = view->getFieldAs<uint16_t>(Green, i);
-                uint16_t b = view->getFieldAs<uint16_t>(Blue, i);
+                using namespace Dimension;
+                uint16_t r = view->getFieldAs<uint16_t>(Id::Red, i);
+                uint16_t g = view->getFieldAs<uint16_t>(Id::Green, i);
+                uint16_t b = view->getFieldAs<uint16_t>(Id::Blue, i);
                 uint16_t color = RGB(r, g, b);
                 histogram[color]++;
             }
@@ -542,10 +523,10 @@ void PrcWriter::write(const PointViewPtr view)
 
             for (point_count_t i = 0; i < view->size(); ++i)
             {
-                using namespace Dimension::Id;
-                uint16_t r = view->getFieldAs<uint16_t>(Red, i);
-                uint16_t g = view->getFieldAs<uint16_t>(Green, i);
-                uint16_t b = view->getFieldAs<uint16_t>(Blue, i);
+                using namespace Dimension;
+                uint16_t r = view->getFieldAs<uint16_t>(Id::Red, i);
+                uint16_t g = view->getFieldAs<uint16_t>(Id::Green, i);
+                uint16_t b = view->getFieldAs<uint16_t>(Id::Blue, i);
                 uint16_t color = RGB(r, g, b);
                 uint16_t colorIndex = histogram[color];
                 indices[colorIndex].push_back(i);
@@ -565,10 +546,10 @@ void PrcWriter::write(const PointViewPtr view)
 
                     int idx = indices[level][point];
 
-                    using namespace Dimension::Id;
-                    xd = view->getFieldAs<double>(X, idx) - cx;
-                    yd = view->getFieldAs<double>(Y, idx) - cy;
-                    zd = view->getFieldAs<double>(Z, idx) - cz;
+                    using namespace Dimension;
+                    xd = view->getFieldAs<double>(Id::X, idx) - cx;
+                    yd = view->getFieldAs<double>(Id::Y, idx) - cy;
+                    zd = view->getFieldAs<double>(Id::Z, idx) - cz;
 
                     points[point][0] = xd;
                     points[point][1] = yd;
@@ -609,10 +590,10 @@ void PrcWriter::write(const PointViewPtr view)
 
             for (point_count_t i = 0; i < view->size(); ++i)
             {
-                using namespace Dimension::Id;
-                xd = view->getFieldAs<double>(X, i) - cx;
-                yd = view->getFieldAs<double>(Y, i) - cy;
-                zd = view->getFieldAs<double>(Z, i) - cz;
+                using namespace Dimension;
+                xd = view->getFieldAs<double>(Id::X, i) - cx;
+                yd = view->getFieldAs<double>(Id::Y, i) - cy;
+                zd = view->getFieldAs<double>(Id::Z, i) - cz;
 
                 if (i % 10000 == 0)
                 {
