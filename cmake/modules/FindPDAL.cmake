@@ -43,14 +43,13 @@ FIND_PATH(PDAL_INCLUDE_DIR
   PATHS
   /usr/include
   /usr/local/include
-  /tmp/lasjunk/include
   ${OSGEO4W_ROOT_DIR}/include
   NO_DEFAULT_PATH)
 
 if(WIN32)
-    SET(PDAL_NAMES ${OSGEO4W_IMPORT_LIBRARY} libpdal libpdalcpp)
+    SET(PDAL_NAMES ${OSGEO4W_IMPORT_LIBRARY} libpdalcpp)
 else()
-    SET(PDAL_NAMES ${OSGEO4W_IMPORT_LIBRARY} pdal pdalcpp)
+    SET(PDAL_NAMES ${OSGEO4W_IMPORT_LIBRARY} pdalcpp)
 endif()
 
 FIND_LIBRARY(PDAL_LIBRARY
@@ -58,11 +57,10 @@ FIND_LIBRARY(PDAL_LIBRARY
   PATHS
   /usr/lib
   /usr/local/lib
-  /tmp/lasjunk/lib
   ${OSGEO4W_ROOT_DIR}/lib)
 
-IF(PDAL_FOUND)
-  SET(PDAL_LIBRARIES ${PDAL_LIBRARY})
+IF (PDAL_FOUND)
+    SET(PDAL_LIBRARIES ${PDAL_LIBRARY})
 ENDIF()
 
 IF(PDAL_INCLUDE_DIR)
