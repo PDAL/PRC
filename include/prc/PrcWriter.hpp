@@ -59,17 +59,35 @@ enum CONTRAST_STRETCH
 class PDAL_DLL PrcWriter : public Writer
 {
 public:
-    PrcWriter();
+    PrcWriter()
+    {}
 
     static void * create();
     static int32_t destroy(void *);
     std::string getName() const;
 
-    Options getDefaultOptions();
-
 private:
+    enum class OutputFormat
+    {
+        Pdf,
+        Prc
+    };
+
+    enum class ColorScheme
+    {
+        Solid,
+        Oranges,
+        BlueGreen
+    };
+
+    enum class ContrastStretch
+    {
+        Linear,
+        Sqrt
+    };
+
     virtual void initialize();
-    virtual void processOptions(const Options& options);
+    virtual void addArgs(ProgramArgs& args);
     virtual void ready(PointTableRef table);
     virtual void write(const PointViewPtr view);
     virtual void done(PointTableRef table);
@@ -79,9 +97,9 @@ private:
     std::string m_pdfFilename;
     BOX3D m_bounds;
 
-    int m_outputFormat;
-    int m_colorScheme;
-    int m_contrastStretch;
+    OutputFormat m_outputFormat;
+    ColorScheme m_colorScheme;
+    ContrastStretch m_contrastStretch;
 
     HPDF_REAL m_fov;
     HPDF_REAL m_coox;
@@ -93,9 +111,16 @@ private:
     HPDF_REAL m_roo;
     HPDF_REAL m_roll;
 
-    PrcWriter& operator=(const PrcWriter&); // not implemented
-    PrcWriter(const PrcWriter&); // not implemented
+    friend std::istream& operator>>(std::istream& in, OutputFormat& fmt);
+    friend std::ostream& operator<<(std::ostream& out, const OutputFormat& fmt);
+    friend std::istream& operator>>(std::istream& in, ColorScheme& fmt);
+    friend std::ostream& operator<<(std::ostream& out, const ColorScheme& fmt);
+    friend std::istream& operator>>(std::istream& in, ContrastStretch& fmt);
+    friend std::ostream& operator<<(std::ostream& out,
+        const ContrastStretch& fmt);
 
+    PrcWriter& operator=(const PrcWriter&) = delete;
+    PrcWriter(const PrcWriter&) = delete;
 };
 
 } // namespace pdal
