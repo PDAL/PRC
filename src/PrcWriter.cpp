@@ -55,6 +55,7 @@ std::string PrcWriter::getName() const
 }
 
 
+<<<<<<< HEAD
 PrcWriter::PrcWriter()
     : Writer()
     , m_outputFormat(OUTPUT_FORMAT_PDF)
@@ -122,6 +123,28 @@ void PrcWriter::addArgs(ProgramArgs& args)
         throw pdal_error("Unrecognized contrast stretch");
     }
 
+=======
+void PrcWriter::addArgs(ProgramArgs& args)
+{
+    args.add("prc_filename", "Filename to write PRC file to",
+        m_prcFilename).setPositional();
+    args.add("pdf_filename", "Filename to write PDF file to",
+        m_pdfFilename).setPositional();
+    args.add("output_format", "PRC or PDF", m_outputFormat, OutputFormat::Pdf);
+    args.add("color_scheme", "Solid, oranges, or blue-green",
+        m_colorScheme, ColorScheme::Solid);
+    args.add("contrast_stretch", "Linear or sqrt", m_contrastStretch,
+        ContrastStretch::Linear);
+    args.add("fov", "Field of View", m_fov, 30.0f);
+    args.add("coox", "Camera coox", m_coox);
+    args.add("cooy", "Camera cooy", m_cooy);
+    args.add("cooz", "Camera cooz", m_cooz);
+    args.add("c2cx", "Camera c2cx", m_c2cx);
+    args.add("c2cy", "Camera c2cy", m_c2cy);
+    args.add("c2cz", "Camera c2cz", m_c2cz);
+    args.add("roo", "Camera roo", m_roo, 20.0f);
+    args.add("roll", "Camera roll", m_roll);
+>>>>>>> master
 }
 
 
@@ -148,7 +171,7 @@ void PrcWriter::done(PointTableRef table)
     m_prcFile->endgroup();
     m_prcFile->finish();
 
-    if (m_outputFormat == OUTPUT_FORMAT_PDF)
+    if (m_outputFormat == OutputFormat::Pdf)
     {
         log()->get(LogLevel::Debug4) << "Writing PDF." << std::endl;
 
@@ -167,7 +190,6 @@ void PrcWriter::done(PointTableRef table)
         if (!pdf)
         {
             throw pdal_error("Cannot create PdfDoc object!");
-
         }
         pdf->pdf_version = HPDF_VER_17;
 
@@ -175,7 +197,8 @@ void PrcWriter::done(PointTableRef table)
         HPDF_Page_SetWidth(page, width);
         HPDF_Page_SetHeight(page, height);
 
-        log()->get(LogLevel::Debug2) << "prcFilename: " << m_prcFilename << std::endl;
+        log()->get(LogLevel::Debug2) << "prcFilename: " <<
+            m_prcFilename << std::endl;
 
         u3d = HPDF_LoadU3DFromFile(pdf, m_prcFilename.c_str());
         if (!u3d)
@@ -238,8 +261,8 @@ void PrcWriter::write(const PointViewPtr view)
     double cy = (m_bounds.maxy-m_bounds.miny)/2+m_bounds.miny;
     double cz = (m_bounds.maxz-m_bounds.minz)/2+m_bounds.minz;
 
-    if ((m_colorScheme == COLOR_SCHEME_ORANGES) ||
-            (m_colorScheme == COLOR_SCHEME_BLUE_GREEN))
+    if ((m_colorScheme == ColorScheme::Oranges) ||
+            (m_colorScheme == ColorScheme::BlueGreen))
     {
         double **p0, **p1, **p2, **p3, **p4, **p5, **p6, **p7, **p8;
         p0 = (double**) malloc(view->size()*sizeof(double*));
@@ -271,7 +294,7 @@ void PrcWriter::write(const PointViewPtr view)
 
         RGBAColour c0, c1, c2, c3, c4, c5, c6, c7, c8;
 
-        if (m_colorScheme == COLOR_SCHEME_BLUE_GREEN)
+        if (m_colorScheme == ColorScheme::BlueGreen)
         {
             c8.Set(247.0/255.0, 252.0/255.0, 253.0/255.0);
             c7.Set(229.0/255.0, 245.0/255.0, 249.0/255.0);
@@ -283,7 +306,7 @@ void PrcWriter::write(const PointViewPtr view)
             c1.Set(0.0, 109.0/255.0,  44.0/255.0);
             c0.Set(0.0,  68.0/255.0,  27.0/255.0);
         }
-        else if (m_colorScheme == COLOR_SCHEME_ORANGES)
+        else if (m_colorScheme == ColorScheme::Oranges)
         {
             c8.Set(255.0/255.0, 245.0/255.0, 235.0/255.0);
             c7.Set(254.0/255.0, 230.0/255.0, 206.0/255.0);
@@ -299,7 +322,7 @@ void PrcWriter::write(const PointViewPtr view)
         double range(0.0), step(0.0), t0(0.0), t1(0.0), t2(0.0), t3(0.0),
                t4(0.0), t5(0.0), t6(0.0), t7(0.0);
 
-        if (m_contrastStretch == CONTRAST_STRETCH_SQRT)
+        if (m_contrastStretch == ContrastStretch::Sqrt)
         {
             range = std::sqrt(m_bounds.maxz) - std::sqrt(m_bounds.minz);
             step = range / 9;
@@ -336,7 +359,7 @@ void PrcWriter::write(const PointViewPtr view)
             t6 = m_bounds.minz + twoper + 6 * step;
             t7 = m_bounds.minz + twoper + 7 * step;
         }
-        else if (m_contrastStretch == CONTRAST_STRETCH_LINEAR)
+        else if (m_contrastStretch == ContrastStretch::Linear)
         {
             range = m_bounds.maxz - m_bounds.minz;
             step = range / 9;
@@ -372,10 +395,16 @@ void PrcWriter::write(const PointViewPtr view)
 
         for (point_count_t i = 0; i < view->size(); ++i)
         {
+<<<<<<< HEAD
             using namespace Dimension;
             double xd = view->getFieldAs<double>(Id::X, i) - cx;
             double yd = view->getFieldAs<double>(Id::Y, i) - cy;
             double zd = view->getFieldAs<double>(Id::Z, i) - cz;
+=======
+            double xd = view->getFieldAs<double>(Dimension::Id::X, i) - cx;
+            double yd = view->getFieldAs<double>(Dimension::Id::Y, i) - cy;
+            double zd = view->getFieldAs<double>(Dimension::Id::Z, i) - cz;
+>>>>>>> master
             //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
             if (zd < t0)
@@ -471,6 +500,8 @@ void PrcWriter::write(const PointViewPtr view)
             free(p7[i]);
             free(p8[i]);
         }
+            log()->get(LogLevel::Debug4) << "Using RGB." << std::endl;
+
         free(p0);
         free(p1);
         free(p2);
@@ -495,8 +526,6 @@ void PrcWriter::write(const PointViewPtr view)
 
         if (bHaveColor)
         {
-            log()->get(LogLevel::Debug4) << "Using RGB." << std::endl;
-
             uint16_t histogram[INT16_MAX] = {0};
 
             double xd(0.0);
@@ -618,6 +647,93 @@ void PrcWriter::write(const PointViewPtr view)
             free(points);
         }
     }
+}
+
+std::istream& operator>>(std::istream& in, PrcWriter::OutputFormat& fmt)
+{
+    std::string s;
+    in >> s;
+
+    s = Utils::tolower(s);
+    if (s == "pdf")
+        fmt = PrcWriter::OutputFormat::Pdf;
+    else if (s == "prc")
+        fmt = PrcWriter::OutputFormat::Prc;
+    else
+        in.setstate(std::ios::failbit);
+    return in;
+}
+
+std::ostream& operator<<(std::ostream& out, const PrcWriter::OutputFormat& fmt)
+{
+    switch (fmt)
+    {
+    case PrcWriter::OutputFormat::Pdf:
+        out << "Pdf";
+    case PrcWriter::OutputFormat::Prc:
+        out << "Prc";
+    }
+    return out;
+}
+
+std::istream& operator>>(std::istream& in, PrcWriter::ColorScheme& scheme)
+{
+    std::string s;
+    in >> s;
+
+    s = Utils::tolower(s);
+    if (s == "solid")
+        scheme = PrcWriter::ColorScheme::Solid;
+    else if (s == "oranges")
+        scheme = PrcWriter::ColorScheme::Oranges;
+    else if (s == "bluegreen")
+        scheme = PrcWriter::ColorScheme::BlueGreen;
+    else
+        in.setstate(std::ios::failbit);
+    return in;
+}
+
+std::ostream& operator<<(std::ostream& out,
+    const PrcWriter::ColorScheme& scheme)
+{
+    switch (scheme)
+    {
+    case PrcWriter::ColorScheme::Solid:
+        out << "Solid";
+    case PrcWriter::ColorScheme::Oranges:
+        out << "Oranges";
+    case PrcWriter::ColorScheme::BlueGreen:
+        out << "BlueGreen";
+    }
+    return out;
+}
+
+std::istream& operator>>(std::istream& in, PrcWriter::ContrastStretch& cs)
+{
+    std::string s;
+    in >> s;
+
+    s = Utils::tolower(s);
+    if (s == "linear")
+        cs = PrcWriter::ContrastStretch::Linear;
+    else if (s == "sqrt")
+        cs = PrcWriter::ContrastStretch::Sqrt;
+    else
+        in.setstate(std::ios::failbit);
+    return in;
+}
+
+std::ostream& operator<<(std::ostream& out,
+    const PrcWriter::ContrastStretch& cs)
+{
+    switch (cs)
+    {
+    case PrcWriter::ContrastStretch::Linear:
+        out << "Linear";
+    case PrcWriter::ContrastStretch::Sqrt:
+        out << "Sqrt";
+    }
+    return out;
 }
 
 } // namespace pdal
