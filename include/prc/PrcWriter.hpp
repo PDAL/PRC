@@ -66,10 +66,6 @@ public:
     static int32_t destroy(void *);
     std::string getName() const;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> master
 private:
     enum class OutputFormat
     {
