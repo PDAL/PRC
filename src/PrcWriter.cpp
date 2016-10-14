@@ -55,7 +55,6 @@ std::string PrcWriter::getName() const
 }
 
 
-<<<<<<< HEAD
 PrcWriter::PrcWriter()
     : Writer()
     , m_outputFormat(OUTPUT_FORMAT_PDF)
