@@ -87,7 +87,6 @@ private:
     };
 
     virtual void initialize();
-    virtual void addArgs(ProgramArgs& args);
     virtual void ready(PointTableRef table);
     virtual void addArgs(ProgramArgs& args);
     virtual void write(const PointViewPtr view);
