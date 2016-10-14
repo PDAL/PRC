@@ -123,7 +123,6 @@ void PrcWriter::addArgs(ProgramArgs& args)
         throw pdal_error("Unrecognized contrast stretch");
     }
 
-=======
 void PrcWriter::addArgs(ProgramArgs& args)
 {
     args.add("prc_filename", "Filename to write PRC file to",
@@ -144,7 +143,6 @@ void PrcWriter::addArgs(ProgramArgs& args)
     args.add("c2cz", "Camera c2cz", m_c2cz);
     args.add("roo", "Camera roo", m_roo, 20.0f);
     args.add("roll", "Camera roll", m_roll);
->>>>>>> master
 }
 
 
@@ -395,16 +393,10 @@ void PrcWriter::write(const PointViewPtr view)
 
         for (point_count_t i = 0; i < view->size(); ++i)
         {
-<<<<<<< HEAD
             using namespace Dimension;
             double xd = view->getFieldAs<double>(Id::X, i) - cx;
             double yd = view->getFieldAs<double>(Id::Y, i) - cy;
             double zd = view->getFieldAs<double>(Id::Z, i) - cz;
-=======
-            double xd = view->getFieldAs<double>(Dimension::Id::X, i) - cx;
-            double yd = view->getFieldAs<double>(Dimension::Id::Y, i) - cy;
-            double zd = view->getFieldAs<double>(Dimension::Id::Z, i) - cz;
->>>>>>> master
             //  if (i % 1000 == 0) printf("%f %f %f\n", xd, yd, zd);
 
             if (zd < t0)
