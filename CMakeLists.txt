@@ -117,7 +117,7 @@ else()
   # Recommended C++ compilation flags
   # -Weffc++
   set(PRC_COMMON_CXX_FLAGS
-	  #    "-pedantic -Wall -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Wredundant-decls -Wno-long-long -fPIC")
+      #    "-pedantic -Wall -Wpointer-arith -Wcast-align -Wcast-qual -Wfloat-equal -Wredundant-decls -Wno-long-long -fPIC")
     "-Wextra -Wall -Wno-unused-parameter -Wno-unused-variable -Wpointer-arith -Wcast-align -Wcast-qual -Wredundant-decls -Wno-long-long -fPIC")
 
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -165,7 +165,7 @@ mark_as_advanced(CLEAR ZLIB_INCLUDE_DIR)
 mark_as_advanced(CLEAR ZLIP_LIBRARY)
 include_directories(${ZLIB_INCLUDE_DIR})
 
-find_package(PDAL 1.0 REQUIRED CONFIG NO_POLICY_SCOPE)
+find_package(PDAL 1.3 REQUIRED CONFIG NO_POLICY_SCOPE)
 mark_as_advanced(CLEAR PDAL_INCLUDE_DIRS)
 mark_as_advanced(CLEAR PDAL_LIBRARY)
 include_directories(${PDAL_INCLUDE_DIRS})
@@ -209,10 +209,11 @@ set(PRC_SOURCES
   ${PRC_CPP})
 
 add_library(${PRC_WRITER_NAME} SHARED ${PRC_SOURCES})
+link_directories(${PDAL_LIBRARY_DIRS})
 target_link_libraries(${PRC_WRITER_NAME}
-                      ${PDAL_LIBRARY}
-		      ${ZLIB_LIBRARY}
-		      ${HPDF_LIBRARY})
+    ${PDAL_LIBRARIES}
+              ${ZLIB_LIBRARY}
+              ${HPDF_LIBRARY})
 set_target_properties(${PRC_WRITER_NAME} PROPERTIES
   SOVERSION "0.1.0" )
 
