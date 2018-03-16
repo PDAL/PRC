@@ -32,7 +32,6 @@
 
 #include <pdal/Dimension.hpp>
 #include <pdal/PointView.hpp>
-#include <pdal/pdal_macros.hpp>
 #include <pdal/StageFactory.hpp>
 #include <pdal/util/Utils.hpp>
 
