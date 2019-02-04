@@ -32,7 +32,6 @@
 
 #include <pdal/Dimension.hpp>
 #include <pdal/PointView.hpp>
-#include <pdal/pdal_macros.hpp>
 #include <pdal/StageFactory.hpp>
 #include <pdal/util/Utils.hpp>
 
@@ -57,8 +56,9 @@ std::string PrcWriter::getName() const
 
 void PrcWriter::addArgs(ProgramArgs& args)
 {
-    args.add("prc_filename", "Filename to write PRC file to",
+    args.add("filename", "Filename to write PRC file to",
         m_prcFilename).setPositional();
+    args.addSynonym("filename", "prc_filename");
     args.add("pdf_filename", "Filename to write PDF file to",
         m_pdfFilename).setPositional();
     args.add("output_format", "PRC or PDF", m_outputFormat, OutputFormat::Pdf);
@@ -157,9 +157,7 @@ void PrcWriter::done(PointTableRef table)
         HPDF_U3D_SetDefault3DView(u3d, "DefaultView");
 
         // libharu master changes things slightly
-        //annot = HPDF_Page_Create3DAnnot(page, rect, false, false, u3d, NULL);
-        // but the libharu-dev package expects this
-        annot = HPDF_Page_Create3DAnnot(page, rect, u3d);
+        annot = HPDF_Page_Create3DAnnot(page, rect, false, false, u3d, NULL);
         if (!annot)
         {
             throw pdal_error("cannot create annotation!");

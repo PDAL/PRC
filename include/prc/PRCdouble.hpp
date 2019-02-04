@@ -104,10 +104,10 @@ struct sCodageOfFrequentDoubleOrExponent
 
 #define MAXLENGTHFORCOMPRESSEDTYPE      ((22+1+1+4+6*(1+8))+7)/8
 
-#define NEGATIVE(d)     (((union ieee754_double *)&(d))->ieee.negative)
-#define EXPONENT(d)     (((union ieee754_double *)&(d))->ieee.exponent)
-#define MANTISSA0(d)    (((union ieee754_double *)&(d))->ieee.mantissa0)
-#define MANTISSA1(d)    (((union ieee754_double *)&(d))->ieee.mantissa1)
+#define NEGATIVE(d)     ((reinterpret_cast<const ieee754_double *>(&d))->ieee.negative)
+#define EXPONENT(d)     ((reinterpret_cast<const ieee754_double *>(&d))->ieee.exponent)
+#define MANTISSA0(d)    ((reinterpret_cast<const ieee754_double *>(&d))->ieee.mantissa0)
+#define MANTISSA1(d)    ((reinterpret_cast<const ieee754_double *>(&d))->ieee.mantissa1)
 
 typedef unsigned char PRCbyte;
 typedef unsigned short PRCword;
