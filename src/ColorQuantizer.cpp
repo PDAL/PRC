@@ -198,8 +198,8 @@ int ColorQuantizer::compare(const void *a1, const void *a2)
     word color1, color2;
     byte c_1, c_2;
 
-    color1 = (word)*(word *)a1;
-    color2 = (word)*(word *)a2;
+    color1 = *(reinterpret_cast<const word *>(a1));
+    color2 = *(reinterpret_cast<const word *>(a2));
     switch (longdim)
     {
         case 0:

@@ -301,7 +301,7 @@ uint32_t PRCUncompressedFile::getSize() const
 
 void PRCStartHeader::serializeStartHeader(ostream &out) const
 {
-  WriteUncompressedBlock ("PRC",3)
+  WriteUncompressedBlock(const_cast<char *>("PRC"), 3)
   WriteUncompressedUnsignedInteger (minimal_version_for_read)
   WriteUncompressedUnsignedInteger (authoring_version)
   SerializeFileStructureUncompressedUniqueId( file_structure_uuid );
@@ -1132,7 +1132,7 @@ uint32_t PRCFileStructure::addPicture(EPRCPictureDataFormat format, uint32_t siz
         unsigned int sizeAvailable = deflateBound(&strm,size);
         uint8_t *compressedData = (uint8_t*) malloc(sizeAvailable);
         strm.avail_in = size;
-        strm.next_in = (unsigned char*)p;
+        strm.next_in = const_cast<unsigned char *>(p);
         strm.next_out = (unsigned char*)compressedData;
         strm.avail_out = sizeAvailable;
 
