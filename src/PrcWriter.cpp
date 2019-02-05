@@ -142,7 +142,7 @@ void PrcWriter::done(PointTableRef table)
             throw pdal_error("cannot create DefaultView!");
         }
 
-        char msg[100];
+        char msg[1000];
         sprintf(msg, "camera %f %f %f %f %f %f %f %f", m_coox,
                 m_cooy, m_cooz, m_c2cx, m_c2cy, m_c2cz, m_roo, m_roll);
         log()->get(LogLevel::Debug2) << msg << std::endl ;
@@ -181,7 +181,7 @@ void PrcWriter::write(const PointViewPtr view)
     double cz2 = (zmax-zmin)/2+zmin;
     HPDF_REAL cooz = static_cast<HPDF_REAL>(cz2);
 
-    char msg[100];
+    char msg[1000];
     sprintf(msg, "cz: %f, min: %f, max: %f, cooz: %f", cz2, zmin, zmax, cooz);
     log()->get(LogLevel::Debug2) << msg << std::endl ;
 
@@ -301,7 +301,7 @@ void PrcWriter::write(const PointViewPtr view)
             t7 = m_bounds.minz + 8 * step;
         }
 
-        char msg[100];
+        char msg[1000];
         sprintf(msg, "z stats %f, %f, %f, %f, %f, %f, %f, %f, %f, %f",
                 range, step, t0, t1, t2, t3, t4, t5, t6, t7);
         log()->get(LogLevel::Debug2) << msg << std::endl ;
@@ -547,7 +547,7 @@ void PrcWriter::write(const PointViewPtr view)
 
                 if (i % 10000 == 0)
                 {
-                    char msg[100];
+                    char msg[1000];
                     sprintf(msg, "small point %f %f %f", xd, yd, zd);
                     log()->get(LogLevel::Debug2) << msg << std::endl;
                 }

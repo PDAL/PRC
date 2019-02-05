@@ -26,15 +26,14 @@ int stCOFDOECompare(const void* pcofdoe1,const void* pcofdoe2)
 #ifndef HAVE_MEMRCHR
 void *memrchr(const void *buf,int c,size_t count)
 {
-  unsigned char
-      *pcBuffer=(unsigned char *)buf,
-                 *pcBufferEnd=pcBuffer-count;
+  unsigned char *pcBuffer = (unsigned char *)buf;
+  unsigned char *pcBufferEnd = pcBuffer - count;
 
-                 for(;pcBuffer>pcBufferEnd;pcBuffer--)
-                   if(*pcBuffer==c)
-                     return(pcBuffer);
+  for(;pcBuffer>pcBufferEnd;pcBuffer--)
+      if(*pcBuffer==c)
+          return(pcBuffer);
 
-                 return(NULL);
+  return(NULL);
 }
 #endif
 #endif
