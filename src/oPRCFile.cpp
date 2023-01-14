@@ -79,7 +79,6 @@
 #define SerializeUnit( value ) (value).serializeUnit(out);
 
 using std::string;
-using namespace std;
 
 // Map [0,1] to [0,255]
 inline uint8_t byte(double r) 
@@ -284,7 +283,7 @@ void makeAppUUID(PRCUniqueId& UUID)
   UUID.id0 = UUID.id1 = UUID.id2 = UUID.id3 = 0;
 }
 
-void PRCUncompressedFile::write(ostream &out) const
+void PRCUncompressedFile::write(std::ostream &out) const
 {
   if(data!=NULL)
   {
@@ -299,7 +298,7 @@ uint32_t PRCUncompressedFile::getSize() const
 }
 
 
-void PRCStartHeader::serializeStartHeader(ostream &out) const
+void PRCStartHeader::serializeStartHeader(std::ostream &out) const
 {
   WriteUncompressedBlock(const_cast<char *>("PRC"), 3)
   WriteUncompressedUnsignedInteger (minimal_version_for_read)
@@ -314,7 +313,7 @@ uint32_t PRCStartHeader::getStartHeaderSize() const
 }
 
 
-void PRCFileStructure::write(ostream &out)
+void PRCFileStructure::write(std::ostream &out)
 {
   // SerializeFileStructureHeader
   SerializeStartHeader
@@ -366,7 +365,7 @@ uint32_t PRCFileStructure::getSize()
 }
 
 
-void PRCFileStructureInformation::write(ostream &out)
+void PRCFileStructureInformation::write(std::ostream &out)
 {
   SerializeFileStructureUncompressedUniqueId( UUID );
 
@@ -383,7 +382,7 @@ uint32_t PRCFileStructureInformation::getSize()
   return (4+2+number_of_offsets)*sizeof(uint32_t);
 }
 
-void PRCHeader::write(ostream &out)
+void PRCHeader::write(std::ostream &out)
 {
   SerializeStartHeader
   WriteUncompressedUnsignedInteger (number_of_file_structures)
@@ -431,7 +430,7 @@ void oPRCFile::doGroup(PRCgroup& group)
               same_color = false;
               break;
             }
-          map<PRCVector3d,uint32_t> points;
+          std::map<PRCVector3d,uint32_t> points;
           PRC3DWireTess *tess = new PRC3DWireTess();
           if(!same_color)
           {
@@ -443,13 +442,13 @@ void oPRCFile::doGroup(PRCgroup& group)
             tess->wire_indexes.push_back(lit->point.size());
             for(uint32_t i=0; i<lit->point.size(); i++)
             {
-              map<PRCVector3d,uint32_t>::iterator pPoint = points.find(lit->point[i]);
+              std::map<PRCVector3d,uint32_t>::iterator pPoint = points.find(lit->point[i]);
               if(pPoint!=points.end())
                 tess->wire_indexes.push_back(pPoint->second);
               else
               {
                 const uint32_t point_index = tess->coordinates.size();
-                points.insert(make_pair(lit->point[i],point_index));
+                points.insert(std::make_pair(lit->point[i],point_index));
                 tess->wire_indexes.push_back(point_index);
                 tess->coordinates.push_back(lit->point[i].x);
                 tess->coordinates.push_back(lit->point[i].y);
@@ -484,7 +483,7 @@ void oPRCFile::doGroup(PRCgroup& group)
             same_color = false;
             break;
           }
-        map<PRCVector3d,uint32_t> points;
+        std::map<PRCVector3d,uint32_t> points;
         PRC3DTess *tess = new PRC3DTess();
         tess->crease_angle = group.options.crease_angle;
         PRCTessFace *tessFace = new PRCTessFace();
@@ -496,12 +495,12 @@ void oPRCFile::doGroup(PRCgroup& group)
           uint32_t vertex_indices[4];
           for(size_t i = (degenerate?1:0); i < 4; ++i)
           {
-            map<PRCVector3d,uint32_t>::const_iterator pPoint = points.find(rit->vertices[i]);
+            std::map<PRCVector3d,uint32_t>::const_iterator pPoint = points.find(rit->vertices[i]);
             if(pPoint!=points.end())
               vertex_indices[i] =  pPoint->second;
             else
             {
-              points.insert(make_pair(rit->vertices[i],(vertex_indices[i] = tess->coordinates.size())));
+              points.insert(std::make_pair(rit->vertices[i],(vertex_indices[i] = tess->coordinates.size())));
               tess->coordinates.push_back(rit->vertices[i].x);
               tess->coordinates.push_back(rit->vertices[i].y);
               tess->coordinates.push_back(rit->vertices[i].z);
@@ -546,7 +545,7 @@ void oPRCFile::doGroup(PRCgroup& group)
 
     if(!group.quads.empty())
     {
-      map<PRCVector3d,uint32_t> points;
+      std::map<PRCVector3d,uint32_t> points;
       PRC3DTess *tess = new PRC3DTess();
       tess->crease_angle = group.options.crease_angle;
       PRCTessFace *tessFace = new PRCTessFace();
@@ -582,12 +581,12 @@ void oPRCFile::doGroup(PRCgroup& group)
         uint32_t vertex_indices[4];
         for(size_t i = (degenerate?1:0); i < 4; ++i)
         {
-          map<PRCVector3d,uint32_t>::const_iterator pPoint = points.find(qit->vertices[i]);
+          std::map<PRCVector3d,uint32_t>::const_iterator pPoint = points.find(qit->vertices[i]);
           if(pPoint!=points.end())
             vertex_indices[i] =  pPoint->second;
           else
           {
-            points.insert(make_pair(qit->vertices[i],(vertex_indices[i] = tess->coordinates.size())));
+            points.insert(std::make_pair(qit->vertices[i],(vertex_indices[i] = tess->coordinates.size())));
             tess->coordinates.push_back(qit->vertices[i].x);
             tess->coordinates.push_back(qit->vertices[i].y);
             tess->coordinates.push_back(qit->vertices[i].z);
@@ -998,7 +997,7 @@ std::string oPRCFile::calculate_unique_name(const ContentPRCBase *prc_entity,con
   ss << (prc_entity->name.empty()?"node":prc_entity->name) << '.';
   const uint32_t size_serialization = serialization.getSize();
   for(size_t j=0; j<size_serialization; j++)
-    ss << hex << setfill('0') << setw(2) << (uint32_t)(serialization_buffer[j]);
+    ss << std::hex << std::setfill('0') << std::setw(2) << (uint32_t)(serialization_buffer[j]);
 
   return ss.str();
 }
@@ -1084,7 +1083,7 @@ uint32_t PRCFileStructure::addPicture(EPRCPictureDataFormat format, uint32_t siz
   uint32_t components=0;
   PRCPicture picture(name);
   if(size==0 || p==NULL)
-    { cerr << "image not set" << endl; return m1; }
+    { std::cerr << "image not set" << std::endl; return m1; }
   PRCUncompressedFile* uncompressed_file = new PRCUncompressedFile;
   if(format==KEPRCPicture_PNG || format==KEPRCPicture_JPG)
   {
@@ -1112,12 +1111,12 @@ uint32_t PRCFileStructure::addPicture(EPRCPictureDataFormat format, uint32_t siz
     case KEPRCPicture_BITMAP_GREYA_BYTE:
       components = 2; break;
     default:
-      { cerr << "unknown picture format" << endl; return m1; }
+      { std::cerr << "unknown picture format" << std::endl; return m1; }
   }
       if(width==0 || height==0)
-        { cerr << "width or height parameter not set" << endl; return m1; }
+        { std::cerr << "width or height parameter not set" << std::endl; return m1; }
       if (size < width*height*components)
-        { cerr << "image too small" << endl; return m1; }
+        { std::cerr << "image too small" << std::endl; return m1; }
 
       {
         uint32_t compressedDataSize = 0;
@@ -1128,7 +1127,7 @@ uint32_t PRCFileStructure::addPicture(EPRCPictureDataFormat format, uint32_t siz
         strm.zfree = Z_NULL;
         strm.opaque = Z_NULL;
         if(deflateInit(&strm,Z_DEFAULT_COMPRESSION) != Z_OK)
-          { cerr << "Compression initialization failed" << endl; return m1; }
+          { std::cerr << "Compression initialization failed" << std::endl; return m1; }
         unsigned int sizeAvailable = deflateBound(&strm,size);
         uint8_t *compressedData = (uint8_t*) malloc(sizeAvailable);
         strm.avail_in = size;
@@ -1154,7 +1153,7 @@ uint32_t PRCFileStructure::addPicture(EPRCPictureDataFormat format, uint32_t siz
         {
           deflateEnd(&strm);
           free(compressedData);
-          { cerr << "Compression error" << endl; return m1; }
+          { std::cerr << "Compression error" << std::endl; return m1; }
         }
 
         deflateEnd(&strm);
@@ -1205,7 +1204,7 @@ uint32_t oPRCFile::addColor(const PRCRgbColor &color)
     return pColor->second;
 //  color_index = addRgbColorUnique(color);
   const uint32_t color_index = fileStructures[0]->addRgbColor(color);
-  colorMap.insert(make_pair(color,color_index));
+  colorMap.insert(std::make_pair(color,color_index));
   return color_index;
 }
 
@@ -1225,7 +1224,7 @@ uint32_t oPRCFile::addColour(const RGBAColour &colour)
   style->transparency = (uint8_t)(colour.A * 256);
   style->additional = 0;
   const uint32_t style_index = fileStructures[0]->addStyle(style);
-  colourMap.insert(make_pair(colour,style_index));
+  colourMap.insert(std::make_pair(colour,style_index));
   return style_index;
 }
 
@@ -1246,7 +1245,7 @@ uint32_t oPRCFile::addColourWidth(const RGBAColour &colour, double width)
   style->transparency = (uint8_t)(colour.A * 256);
   style->additional = 0;
   const uint32_t style_index = fileStructures[0]->addStyle(style);
-  colourwidthMap.insert(make_pair(colourwidth,style_index));
+  colourwidthMap.insert(std::make_pair(colourwidth,style_index));
   return style_index;
 }
 
@@ -1290,7 +1289,7 @@ uint32_t oPRCFile::addTransform(PRCGeneralTransformation3d*& transform)
   else
   coordinateSystem->axis_set = transform;
   const uint32_t coordinate_system_index = fileStructures[0]->addCoordinateSystem(coordinateSystem);
-  transformMap.insert(make_pair(*transform,coordinate_system_index));
+  transformMap.insert(std::make_pair(*transform,coordinate_system_index));
   if(transform_replaced)
     delete transform;
   transform = NULL;
@@ -1342,7 +1341,7 @@ uint32_t oPRCFile::addMaterial(const PRCmaterial& m)
     materialGeneric->emissive_alpha = m.emissive.A;
     materialGeneric->specular_alpha = m.specular.A;
     material_index = addMaterialGeneric(materialGeneric);
-    materialgenericMap.insert(make_pair(materialgeneric,material_index));
+    materialgenericMap.insert(std::make_pair(materialgeneric,material_index));
   }
   uint32_t color_material_index = m1;
   if(m.picture_data!=NULL)
@@ -1358,7 +1357,7 @@ uint32_t oPRCFile::addMaterial(const PRCmaterial& m)
       uint8_t* data = new uint8_t[picture.size];
       memcpy(data,picture.data,picture.size);
       picture.data = data;
-      pictureMap.insert(make_pair(picture,picture_index));
+      pictureMap.insert(std::make_pair(picture,picture_index));
     }
 
     uint32_t texture_definition_index = m1;
@@ -1377,7 +1376,7 @@ uint32_t oPRCFile::addMaterial(const PRCmaterial& m)
       TextureDefinition->texture_wrapping_mode_T = m.picture_repeat ? KEPRCTextureWrappingMode_Repeat : KEPRCTextureWrappingMode_ClampToEdge;
       TextureDefinition->texture_mapping_attribute_components = (m.picture_format==KEPRCPicture_BITMAP_RGB_BYTE || m.picture_format==KEPRCPicture_JPG) ? PRC_TEXTURE_MAPPING_COMPONENTS_RGB : PRC_TEXTURE_MAPPING_COMPONENTS_RGBA;
       texture_definition_index = addTextureDefinition(TextureDefinition);
-      texturedefinitionMap.insert(make_pair(texturedefinition,texture_definition_index));
+      texturedefinitionMap.insert(std::make_pair(texturedefinition,texture_definition_index));
     }
 
     uint32_t texture_application_index = m1;
@@ -1391,7 +1390,7 @@ uint32_t oPRCFile::addMaterial(const PRCmaterial& m)
       TextureApplication->material_generic_index = material_index;
       TextureApplication->texture_definition_index = texture_definition_index;
       texture_application_index = addTextureApplication(TextureApplication);
-      textureapplicationMap.insert(make_pair(textureapplication,texture_application_index));
+      textureapplicationMap.insert(std::make_pair(textureapplication,texture_application_index));
     }
 
     color_material_index = texture_application_index;
@@ -1416,9 +1415,9 @@ uint32_t oPRCFile::addMaterial(const PRCmaterial& m)
     Style->additional = 0;
     Style->color_material_index = color_material_index;
     style_index = addStyle(Style);
-    styleMap.insert(make_pair(style,style_index));
+    styleMap.insert(std::make_pair(style,style_index));
   }
-//  materialMap.insert(make_pair(material,style_index));
+//  materialMap.insert(std::make_pair(material,style_index));
    return style_index;
 }
 
@@ -1456,9 +1455,9 @@ void oPRCFile::endgroup()
   doGroup(groups.top());
   groups.pop();
 
-// std::cout << lastgroupname << std::endl;
+// std::cout << lastgroupname << std::std::endl;
 // for(std::vector<std::string>::const_iterator it=lastgroupnames.begin(); it!=lastgroupnames.end(); it++)
-//   std::cout << " " << *it << std::endl;
+//   std::cout << " " << *it << std::std::endl;
 
 }
 
