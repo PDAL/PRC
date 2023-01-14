@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 2.6.0)
 project(PRC)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
+set(CMAKE_CXX_STANDARD 17)
+
 #------------------------------------------------------------------------------
 # internal cmake settings
 #------------------------------------------------------------------------------
