@@ -283,9 +283,9 @@ void makeAppUUID(PRCUniqueId& UUID)
   UUID.id0 = UUID.id1 = UUID.id2 = UUID.id3 = 0;
 }
 
-void PRCUncompressedFile::std::write(std::ostream &out) const
+void PRCUncompressedFile::write(std::ostream &out) const
 {
-  if(data!=NULL)
+  if(std::data!=NULL)
   {
     WriteUncompressedUnsignedInteger (file_size)
     out.write((char*)data,file_size);
@@ -442,7 +442,7 @@ void oPRCFile::doGroup(PRCgroup& group)
             tess->wire_indexes.push_back(lit->point.size());
             for(uint32_t i=0; i<lit->point.size(); i++)
             {
-              std::map<PRCVector3d,uint32_t>::std::iterator pPoint = points.find(lit->point[i]);
+              std::map<PRCVector3d,uint32_t>std::iterator pPoint = points.find(lit->point[i]);
               if(pPoint!=points.end())
                 tess->wire_indexes.push_back(pPoint->second);
               else
@@ -695,7 +695,7 @@ void oPRCFile::doGroup(PRCgroup& group)
 
     if(!group.pointsets.empty())
     {
-      for(std::vector<PRCPointSet*>::std::iterator pit=group.pointsets.begin(); pit!=group.pointsets.end(); pit++)
+      for(std::vector<PRCPointSet*>std::iterator pit=group.pointsets.begin(); pit!=group.pointsets.end(); pit++)
       {
         part_definition->addPointSet(*pit);
       }
@@ -703,7 +703,7 @@ void oPRCFile::doGroup(PRCgroup& group)
 
     if(!group.polymodels.empty())
     {
-      for(std::vector<PRCPolyBrepModel*>::std::iterator pit=group.polymodels.begin(); pit!=group.polymodels.end(); pit++)
+      for(std::vector<PRCPolyBrepModel*>std::iterator pit=group.polymodels.begin(); pit!=group.polymodels.end(); pit++)
       {
         (*pit)->is_closed = group.options.closed;
         part_definition->addPolyBrepModel(*pit);
@@ -712,7 +712,7 @@ void oPRCFile::doGroup(PRCgroup& group)
 
     if(!group.polywires.empty())
     {
-      for(std::vector<PRCPolyWire*>::std::iterator pit=group.polywires.begin(); pit!=group.polywires.end(); pit++)
+      for(std::vector<PRCPolyWire*>std::iterator pit=group.polywires.begin(); pit!=group.polywires.end(); pit++)
       {
         part_definition->addPolyWire(*pit);
       }
@@ -722,7 +722,7 @@ void oPRCFile::doGroup(PRCgroup& group)
     {
       PRCTopoContext *wireContext = NULL;
       const uint32_t context_index = getTopoContext(wireContext);
-      for(PRCwireList::std::iterator wit=group.wires.begin(); wit!=group.wires.end(); wit++)
+      for(PRCwireList::iterator wit=group.wires.begin(); wit!=group.wires.end(); wit++)
       {
         PRCWireEdge *wireEdge = new PRCWireEdge;
         wireEdge->curve_3d = wit->curve;
@@ -759,7 +759,7 @@ void oPRCFile::doGroup(PRCgroup& group)
    // context->smallest_thickness = group.options.granularity;
       PRCShell *shell = new PRCShell;
 
-      for(PRCfaceList::std::iterator fit=faces.begin(); fit!=faces.end(); fit++)
+      for(PRCfaceList::iterator fit=faces.begin(); fit!=faces.end(); fit++)
       {
         if(fit->transform || group.options.do_break ||
            (fit->transparent && !group.options.no_break))
@@ -911,7 +911,7 @@ void oPRCFile::doGroup(PRCgroup& group)
       PRCSet *set = new PRCSet(name);
       set->index_local_coordinate_system = addTransform(group.transform);
       lastgroupname = calculate_unique_name(set, parent_product_occurrence);
-      for(PRCRepresentationItemList::std::iterator it=part_definition->representation_item.begin(); it!=part_definition->representation_item.end(); it++)
+      for(PRCRepresentationItemList::iterator it=part_definition->representation_item.begin(); it!=part_definition->representation_item.end(); it++)
       {
         lastgroupnames.push_back(calculate_unique_name(*it, parent_product_occurrence));
         set->addRepresentationItem(*it);
