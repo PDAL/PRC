@@ -727,7 +727,7 @@ void oPRCFile::doGroup(PRCgroup& group)
         PRCWireEdge *wireEdge = new PRCWireEdge;
         wireEdge->curve_3d = wit->curve;
         PRCSingleWireBody *wireBody = new PRCSingleWireBody;
-        wireBody->setwireEdge(wireEdge);
+        wireBody->setWireEdge(wireEdge);
         const uint32_t wire_body_index = wireContext->addSingleWireBody(wireBody);
         PRCWire *wire = new PRCWire();
         wire->index_of_line_style = wit->style;
