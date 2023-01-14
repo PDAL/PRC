@@ -285,7 +285,7 @@ void makeAppUUID(PRCUniqueId& UUID)
 
 void PRCUncompressedFile::write(std::ostream &out) const
 {
-  if(std::data!=NULL)
+  if(data!=NULL)
   {
     WriteUncompressedUnsignedInteger (file_size)
     out.write((char*)data,file_size);
@@ -442,7 +442,7 @@ void oPRCFile::doGroup(PRCgroup& group)
             tess->wire_indexes.push_back(lit->point.size());
             for(uint32_t i=0; i<lit->point.size(); i++)
             {
-              std::map<PRCVector3d,uint32_t>std::iterator pPoint = points.find(lit->point[i]);
+              std::map<PRCVector3d,uint32_t>::iterator pPoint = points.find(lit->point[i]);
               if(pPoint!=points.end())
                 tess->wire_indexes.push_back(pPoint->second);
               else
@@ -695,7 +695,7 @@ void oPRCFile::doGroup(PRCgroup& group)
 
     if(!group.pointsets.empty())
     {
-      for(std::vector<PRCPointSet*>std::iterator pit=group.pointsets.begin(); pit!=group.pointsets.end(); pit++)
+      for(std::vector<PRCPointSet*>::iterator pit=group.pointsets.begin(); pit!=group.pointsets.end(); pit++)
       {
         part_definition->addPointSet(*pit);
       }
@@ -703,7 +703,7 @@ void oPRCFile::doGroup(PRCgroup& group)
 
     if(!group.polymodels.empty())
     {
-      for(std::vector<PRCPolyBrepModel*>std::iterator pit=group.polymodels.begin(); pit!=group.polymodels.end(); pit++)
+      for(std::vector<PRCPolyBrepModel*>::iterator pit=group.polymodels.begin(); pit!=group.polymodels.end(); pit++)
       {
         (*pit)->is_closed = group.options.closed;
         part_definition->addPolyBrepModel(*pit);
@@ -712,7 +712,7 @@ void oPRCFile::doGroup(PRCgroup& group)
 
     if(!group.polywires.empty())
     {
-      for(std::vector<PRCPolyWire*>std::iterator pit=group.polywires.begin(); pit!=group.polywires.end(); pit++)
+      for(std::vector<PRCPolyWire*>::iterator pit=group.polywires.begin(); pit!=group.polywires.end(); pit++)
       {
         part_definition->addPolyWire(*pit);
       }
