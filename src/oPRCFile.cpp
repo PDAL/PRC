@@ -79,7 +79,6 @@
 #define SerializeUnit( value ) (value).serializeUnit(out);
 
 using std::string;
-using namespace std;
 
 // Map [0,1] to [0,255]
 inline uint8_t byte(double r) 
