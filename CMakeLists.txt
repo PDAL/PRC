@@ -1,8 +1,5 @@
-#
-# top-level CMake configuration file for PRC
-#
 
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 3.13)
 project(PRC)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
@@ -20,10 +17,6 @@ mark_as_advanced(CMAKE_VERBOSE_MAKEFILE)
 # Path to additional CMake modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/prc_utils.cmake)
-if (CMAKE_MAJOR_VERSION GREATER 2)
-cmake_policy(SET CMP0022 OLD) # interface link libraries
-cmake_policy(SET CMP0042 OLD) # osx rpath
-endif()
 
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
 
@@ -31,7 +24,7 @@ set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
 # General build settings
 #------------------------------------------------------------------------------
 
-set(PRC_VERSION_STRING 0.1.0 CACHE STRING "PRC version")
+set(PRC_VERSION_STRING 0.2.0 CACHE STRING "PRC version")
 
 DISSECT_VERSION()
 GET_OS_INFO()
@@ -167,7 +160,7 @@ mark_as_advanced(CLEAR ZLIB_INCLUDE_DIR)
 mark_as_advanced(CLEAR ZLIP_LIBRARY)
 include_directories(${ZLIB_INCLUDE_DIR})
 
-find_package(PDAL 1.3 REQUIRED CONFIG NO_POLICY_SCOPE)
+find_package(PDAL 2.7 REQUIRED CONFIG )
 mark_as_advanced(CLEAR PDAL_INCLUDE_DIRS)
 mark_as_advanced(CLEAR PDAL_LIBRARY)
 include_directories(${PDAL_INCLUDE_DIRS})

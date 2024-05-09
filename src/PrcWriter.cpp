@@ -56,8 +56,6 @@ std::string PrcWriter::getName() const
 
 void PrcWriter::addArgs(ProgramArgs& args)
 {
-    args.add("filename", "Filename to write PRC file to",
-        m_prcFilename).setPositional();
     args.addSynonym("filename", "prc_filename");
     args.add("pdf_filename", "Filename to write PDF file to",
         m_pdfFilename).setPositional();
@@ -80,7 +78,7 @@ void PrcWriter::addArgs(ProgramArgs& args)
 
 void PrcWriter::initialize()
 {
-    m_prcFile = std::unique_ptr<oPRCFile>(new oPRCFile(m_prcFilename,1000));
+    m_prcFile = std::unique_ptr<oPRCFile>(new oPRCFile(filename(),1000));
 }
 
 
@@ -128,9 +126,9 @@ void PrcWriter::done(PointTableRef table)
         HPDF_Page_SetHeight(page, height);
 
         log()->get(LogLevel::Debug2) << "prcFilename: " <<
-            m_prcFilename << std::endl;
+            filename() << std::endl;
 
-        u3d = HPDF_LoadU3DFromFile(pdf, m_prcFilename.c_str());
+        u3d = HPDF_LoadU3DFromFile(pdf, filename().c_str());
         if (!u3d)
         {
             throw pdal_error("cannot load U3D object!");
